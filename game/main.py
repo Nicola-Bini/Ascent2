@@ -697,11 +697,14 @@ class Game:
         spawn_pos = self.arena.get_random_spawn_point() if self.arena else Vec3(0, 0, 0)
         self.local_player.respawn((spawn_pos.x, spawn_pos.y, spawn_pos.z))
 
-        # Broadcast respawn
+        # Broadcast respawn to all players
         if self.is_host and self.server:
             self.server.broadcast_respawn(
                 self.local_player.player_id, (spawn_pos.x, spawn_pos.y, spawn_pos.z)
             )
+        elif self.client:
+            # Client needs to notify server of respawn
+            self.client.send_respawn((spawn_pos.x, spawn_pos.y, spawn_pos.z))
 
     def _return_to_menu(self):
         """Return to main menu."""

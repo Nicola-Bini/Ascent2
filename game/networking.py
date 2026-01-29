@@ -155,6 +155,31 @@ class NetworkServer:
                     'projectile': proj_data
                 })
 
+        elif msg_type == NetworkMessage.PLAYER_RESPAWN:
+            # Client respawned
+            player_id = self.clients.get(addr)
+            if player_id is not None:
+                position = message.get('position', (0, 0, 0))
+
+                # Update player state
+                if player_id in self.player_states:
+                    self.player_states[player_id]['is_alive'] = True
+                    self.player_states[player_id]['position'] = position
+
+                # Queue for main thread
+                self.message_queue.append({
+                    'type': NetworkMessage.PLAYER_RESPAWN,
+                    'player_id': player_id,
+                    'position': position
+                })
+
+                # Broadcast to all clients (including back to sender for confirmation)
+                self._broadcast({
+                    'type': NetworkMessage.PLAYER_RESPAWN,
+                    'player_id': player_id,
+                    'position': position
+                })
+
         elif msg_type == NetworkMessage.PING:
             self._send_to(addr, {'type': NetworkMessage.PONG})
 
@@ -349,6 +374,13 @@ class NetworkClient:
         self._send({
             'type': NetworkMessage.PROJECTILE_SPAWN,
             'projectile': projectile_data
+        })
+
+    def send_respawn(self, position):
+        """Send respawn event to server."""
+        self._send({
+            'type': NetworkMessage.PLAYER_RESPAWN,
+            'position': position
         })
 
     def get_messages(self):

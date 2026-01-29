@@ -302,6 +302,27 @@ class ProjectileManager:
                 # Create explosion for secondary weapon hitting obstacles (3x bigger)
                 if proj.weapon == 'secondary':
                     self.create_explosion(proj.hit_position, size=72.0)
+                    # Splash damage to nearby players
+                    splash_radius = 15.0
+                    splash_damage = proj.damage * 0.5
+                    for player in all_players.values():
+                        if player.player_id == proj.owner_id:
+                            continue
+                        if not player.is_alive:
+                            continue
+                        splash_dist = (player.position - proj.hit_position).length()
+                        if splash_dist < splash_radius:
+                            damage_mult = 1.0 - (splash_dist / splash_radius)
+                            actual_damage = int(splash_damage * damage_mult)
+                            if actual_damage > 0:
+                                hits.append({
+                                    'projectile_id': proj_id,
+                                    'target_id': player.player_id,
+                                    'attacker_id': proj.owner_id,
+                                    'damage': actual_damage,
+                                    'weapon': 'splash',
+                                    'position': proj.hit_position
+                                })
                 continue
 
             # Check arena bounds
@@ -320,6 +341,27 @@ class ProjectileManager:
                         'position': Vec3(pos),
                         'weapon': proj.weapon
                     })
+                    # Splash damage to nearby players
+                    splash_radius = 15.0
+                    splash_damage = proj.damage * 0.5
+                    for player in all_players.values():
+                        if player.player_id == proj.owner_id:
+                            continue
+                        if not player.is_alive:
+                            continue
+                        splash_dist = (player.position - pos).length()
+                        if splash_dist < splash_radius:
+                            damage_mult = 1.0 - (splash_dist / splash_radius)
+                            actual_damage = int(splash_damage * damage_mult)
+                            if actual_damage > 0:
+                                hits.append({
+                                    'projectile_id': proj_id,
+                                    'target_id': player.player_id,
+                                    'attacker_id': proj.owner_id,
+                                    'damage': actual_damage,
+                                    'weapon': 'splash',
+                                    'position': Vec3(pos)
+                                })
                 continue
 
             # Check player collisions
