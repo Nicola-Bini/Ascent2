@@ -17,14 +17,14 @@ class Arena:
         self._create_tunnels()
 
     def _create_boundary_walls(self):
-        """Create arena boundary walls."""
+        """Create arena boundary walls with industrial colors."""
         sx, sy, sz = self.size
         hx, hy, hz = self.half_size
 
-        # Floor - dark green-gray
+        # Floor - dark metallic gray-green
         self.walls.append(Entity(
             model='cube',
-            color=color.rgb(30, 40, 35),
+            color=color.rgb(25, 30, 28),
             scale=(sx + 2, 1, sz + 2),
             position=(0, -hy - 0.5, 0),
         ))
@@ -33,63 +33,63 @@ class Arena:
         for i in range(-int(hx) + 20, int(hx), 40):
             self.walls.append(Entity(
                 model='cube',
-                color=color.rgb(50, 65, 55),
-                scale=(1, 0.1, sz),
-                position=(i, -hy + 0.1, 0),
+                color=color.rgb(35, 42, 38),
+                scale=(1.5, 0.15, sz),
+                position=(i, -hy + 0.15, 0),
             ))
         for i in range(-int(hz) + 20, int(hz), 40):
             self.walls.append(Entity(
                 model='cube',
-                color=color.rgb(50, 65, 55),
-                scale=(sx, 0.1, 1),
-                position=(0, -hy + 0.1, i),
+                color=color.rgb(35, 42, 38),
+                scale=(sx, 0.15, 1.5),
+                position=(0, -hy + 0.15, i),
             ))
 
-        # Ceiling - dark
+        # Ceiling - very dark
         self.walls.append(Entity(
             model='cube',
-            color=color.rgb(25, 30, 35),
+            color=color.rgb(18, 20, 22),
             scale=(sx + 2, 1, sz + 2),
             position=(0, hy + 0.5, 0),
         ))
 
-        # Front wall (positive Z) - blue tint
+        # Front wall (positive Z) - dark blue-gray industrial
         self.walls.append(Entity(
             model='cube',
-            color=color.rgb(40, 50, 65),
+            color=color.rgb(28, 32, 42),
             scale=(sx + 2, sy + 2, 1),
             position=(0, 0, hz + 0.5),
         ))
 
-        # Back wall (negative Z) - blue tint
+        # Back wall (negative Z) - dark blue-gray
         self.walls.append(Entity(
             model='cube',
-            color=color.rgb(40, 50, 65),
+            color=color.rgb(28, 32, 42),
             scale=(sx + 2, sy + 2, 1),
             position=(0, 0, -hz - 0.5),
         ))
 
-        # Left wall (negative X) - rust tint
+        # Left wall (negative X) - dark rust/brown
         self.walls.append(Entity(
             model='cube',
-            color=color.rgb(60, 45, 40),
+            color=color.rgb(38, 30, 26),
             scale=(1, sy + 2, sz + 2),
             position=(-hx - 0.5, 0, 0),
         ))
 
-        # Right wall (positive X) - rust tint
+        # Right wall (positive X) - dark rust/brown
         self.walls.append(Entity(
             model='cube',
-            color=color.rgb(60, 45, 40),
+            color=color.rgb(38, 30, 26),
             scale=(1, sy + 2, sz + 2),
             position=(hx + 0.5, 0, 0),
         ))
 
     def _create_tunnels(self):
         """Create tunnel structures."""
-        tunnel_wall = color.rgb(45, 50, 55)
-        tunnel_inner = color.rgb(35, 40, 45)
-        light_strip = color.rgb(70, 110, 140)
+        tunnel_wall = color.rgb(32, 35, 38)
+        tunnel_inner = color.rgb(26, 28, 32)
+        light_strip = color.rgb(55, 85, 105)  # Dim blue lights
 
         # Central horizontal tunnel (along Z axis)
         # Top
@@ -143,35 +143,35 @@ class Arena:
 
     def _create_obstacles(self):
         """Create obstacles for cover."""
-        dark = color.rgb(45, 50, 55)
-        rust = color.rgb(60, 45, 40)
-        blue = color.rgb(45, 55, 70)
-        teal = color.rgb(50, 75, 80)
+        dark_metal = color.rgb(32, 35, 38)
+        rust = color.rgb(42, 32, 28)
+        industrial_blue = color.rgb(30, 36, 45)
+        teal_metal = color.rgb(32, 45, 48)
 
         configs = [
-            # Corner pillars
-            {'pos': (70, 0, 70), 'scale': (12, 70, 12), 'color': dark},
-            {'pos': (-70, 0, 70), 'scale': (12, 70, 12), 'color': dark},
+            # Corner pillars - tall structures
+            {'pos': (70, 0, 70), 'scale': (12, 70, 12), 'color': dark_metal},
+            {'pos': (-70, 0, 70), 'scale': (12, 70, 12), 'color': dark_metal},
             {'pos': (70, 0, -70), 'scale': (12, 70, 12), 'color': rust},
             {'pos': (-70, 0, -70), 'scale': (12, 70, 12), 'color': rust},
 
             # Mid structures
-            {'pos': (50, 0, 0), 'scale': (10, 50, 10), 'color': blue},
-            {'pos': (-50, 0, 0), 'scale': (10, 50, 10), 'color': blue},
-            {'pos': (0, 0, 50), 'scale': (10, 50, 10), 'color': teal},
-            {'pos': (0, 0, -50), 'scale': (10, 50, 10), 'color': teal},
+            {'pos': (50, 0, 0), 'scale': (10, 50, 10), 'color': industrial_blue},
+            {'pos': (-50, 0, 0), 'scale': (10, 50, 10), 'color': industrial_blue},
+            {'pos': (0, 0, 50), 'scale': (10, 50, 10), 'color': teal_metal},
+            {'pos': (0, 0, -50), 'scale': (10, 50, 10), 'color': teal_metal},
 
-            # Platforms
-            {'pos': (50, 20, 50), 'scale': (25, 4, 25), 'color': dark},
-            {'pos': (-50, 20, -50), 'scale': (25, 4, 25), 'color': dark},
+            # Platforms at various heights
+            {'pos': (50, 20, 50), 'scale': (25, 4, 25), 'color': dark_metal},
+            {'pos': (-50, 20, -50), 'scale': (25, 4, 25), 'color': dark_metal},
             {'pos': (50, -20, -50), 'scale': (25, 4, 25), 'color': rust},
             {'pos': (-50, -20, 50), 'scale': (25, 4, 25), 'color': rust},
 
             # Cover blocks
-            {'pos': (35, -30, 35), 'scale': (15, 10, 15), 'color': blue},
-            {'pos': (-35, -30, -35), 'scale': (15, 10, 15), 'color': blue},
-            {'pos': (35, 30, -35), 'scale': (15, 10, 15), 'color': teal},
-            {'pos': (-35, 30, 35), 'scale': (15, 10, 15), 'color': teal},
+            {'pos': (35, -30, 35), 'scale': (15, 10, 15), 'color': industrial_blue},
+            {'pos': (-35, -30, -35), 'scale': (15, 10, 15), 'color': industrial_blue},
+            {'pos': (35, 30, -35), 'scale': (15, 10, 15), 'color': teal_metal},
+            {'pos': (-35, 30, 35), 'scale': (15, 10, 15), 'color': teal_metal},
         ]
 
         for c in configs:

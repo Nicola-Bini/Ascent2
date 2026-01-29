@@ -63,8 +63,12 @@ class Player(Entity):
             mouse.visible = False
             camera.parent = scene
             camera.position = self.position
-            camera.rotation = (0, 0, 0)
-            camera.fov = 100
+            camera.rotation_x = 0
+            camera.rotation_y = 0
+            camera.rotation_z = 0
+            camera.fov = 90
+            camera.clip_plane_near = 0.1
+            camera.clip_plane_far = 500
             self._hide_local_ship()
 
     def _create_ship_model(self):
