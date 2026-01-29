@@ -471,7 +471,7 @@ class Game:
         # Update bots
         for bot in self.bots:
             if bot.is_alive:
-                bot.update(time.dt)
+                bot.update()
                 # Check if bot wants to shoot
                 shot_data = bot.try_shoot()
                 if shot_data:
