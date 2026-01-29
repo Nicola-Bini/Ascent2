@@ -48,6 +48,17 @@ class Player(Entity):
         self.speed_boost_end = 0
         self.damage_boost_end = 0
 
+        # Screen shake
+        self.shake_intensity = 0
+        self.shake_decay = 10  # How fast shake fades
+        self.shake_offset = Vec3(0, 0, 0)
+
+        # Thruster effects
+        self.thruster_particles = []
+        self.thruster_emit_timer = 0
+        self.thruster_emit_rate = 40  # particles per second
+        self.is_thrusting = False
+
         # Track key states locally
         self.keys_held = {
             'w': False, 's': False, 'a': False, 'd': False,
@@ -301,12 +312,23 @@ class Player(Entity):
 
         if accel.length() > 0:
             self.velocity += accel * dt
+            self.is_thrusting = True
+
+            # Emit thruster particles when moving
+            self.thruster_emit_timer += dt
+            if self.thruster_emit_timer > 1 / self.thruster_emit_rate:
+                self.thruster_emit_timer = 0
+                self._emit_thruster_particle(accel.normalized())
         else:
+            self.is_thrusting = False
             drag = self.deceleration * dt
             if self.velocity.length() > drag:
                 self.velocity -= self.velocity.normalized() * drag
             else:
                 self.velocity = Vec3(0, 0, 0)
+
+        # Update thruster particles
+        self._update_thruster_particles()
 
         # Apply speed multiplier from power-ups
         effective_max_speed = self.max_speed * self.speed_multiplier
@@ -336,9 +358,23 @@ class Player(Entity):
                 self.z = clamp(self.z, -hz + margin, hz - margin)
                 self.velocity.z *= -0.5
 
-        camera.position = self.position
-        camera.rotation_x = self.rotation_x
-        camera.rotation_y = self.rotation_y
+        # Update screen shake
+        if self.shake_intensity > 0.01:
+            # Generate random shake offset
+            self.shake_offset = Vec3(
+                random.uniform(-1, 1) * self.shake_intensity,
+                random.uniform(-1, 1) * self.shake_intensity,
+                random.uniform(-1, 1) * self.shake_intensity * 0.5
+            )
+            # Decay shake over time
+            self.shake_intensity *= (1 - self.shake_decay * time.dt)
+        else:
+            self.shake_offset = Vec3(0, 0, 0)
+            self.shake_intensity = 0
+
+        camera.position = self.position + self.shake_offset
+        camera.rotation_x = self.rotation_x + self.shake_offset.y * 2
+        camera.rotation_y = self.rotation_y + self.shake_offset.x * 2
         camera.rotation_z = self.rotation_z
 
     def _interpolate_to_target(self):
@@ -429,6 +465,10 @@ class Player(Entity):
                 part.color = color.red
                 invoke(setattr, part, 'color', original_color, delay=0.1)
 
+        # Trigger screen shake based on damage amount
+        shake_amount = min(amount / 10, 3)  # Cap at 3 intensity
+        self.trigger_screen_shake(shake_amount)
+
         if self.health <= 0:
             self.die(attacker_id)
             return True
@@ -447,6 +487,76 @@ class Player(Entity):
     def apply_shield(self, amount):
         """Add shield points."""
         self.shield = min(100, self.shield + amount)
+
+    def trigger_screen_shake(self, intensity):
+        """Trigger screen shake effect."""
+        if self.is_local:
+            self.shake_intensity = max(self.shake_intensity, intensity)
+
+    def _emit_thruster_particle(self, thrust_direction):
+        """Emit a thruster particle from the back of the ship."""
+        # Calculate spawn position at back of ship
+        spawn_pos = self.world_position - self.forward * 1.5
+
+        # Velocity is opposite of ship forward
+        base_vel = -self.forward * 15
+
+        # Add some randomness
+        vel = base_vel + Vec3(
+            random.uniform(-2, 2),
+            random.uniform(-2, 2),
+            random.uniform(-2, 2)
+        )
+
+        # Create particle
+        particle = Entity(
+            model='quad',
+            position=spawn_pos,
+            scale=random.uniform(0.2, 0.4),
+            color=color.rgb(100, 150, 255),  # Blue-white
+            billboard=True,
+            unlit=True,
+        )
+
+        # Store particle data
+        self.thruster_particles.append({
+            'entity': particle,
+            'velocity': vel,
+            'lifetime': random.uniform(0.1, 0.2),
+            'max_lifetime': 0.2,
+        })
+
+    def _update_thruster_particles(self):
+        """Update all thruster particles."""
+        dt = time.dt
+        particles_to_remove = []
+
+        for p in self.thruster_particles:
+            # Move particle
+            p['entity'].position += p['velocity'] * dt
+
+            # Reduce lifetime
+            p['lifetime'] -= dt
+
+            # Fade out
+            progress = 1 - (p['lifetime'] / p['max_lifetime'])
+            alpha = 1 - progress
+            p['entity'].color = color.rgba(100, 150, 255, alpha * 255)
+            p['entity'].scale = (1 - progress * 0.5) * 0.3
+
+            # Check if expired
+            if p['lifetime'] <= 0:
+                particles_to_remove.append(p)
+                destroy(p['entity'])
+
+        # Remove dead particles
+        for p in particles_to_remove:
+            self.thruster_particles.remove(p)
+
+        # Limit max particles
+        while len(self.thruster_particles) > 50:
+            old = self.thruster_particles.pop(0)
+            destroy(old['entity'])
 
     def update_powerups(self):
         """Update power-up timers."""
