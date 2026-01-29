@@ -305,35 +305,9 @@ class Player(Entity):
             # Rotate the mouse delta by the inverse of the roll
             adjusted_x = mv[0] * cos_roll + mv[1] * sin_roll
             adjusted_y = -mv[0] * sin_roll + mv[1] * cos_roll
-
-            # Calculate rotation amounts
-            yaw_delta = adjusted_x * self.mouse_sensitivity
-            pitch_delta = -adjusted_y * self.mouse_sensitivity
-
-            # Rotate velocity to follow ship orientation (conserve speed while turning)
-            if self.velocity.length() > 0.1:
-                # Rotate velocity around ship's up axis (yaw)
-                if abs(yaw_delta) > 0.001:
-                    yaw_rad = math.radians(yaw_delta)
-                    cos_yaw = math.cos(yaw_rad)
-                    sin_yaw = math.sin(yaw_rad)
-                    vx = self.velocity.x * cos_yaw - self.velocity.z * sin_yaw
-                    vz = self.velocity.x * sin_yaw + self.velocity.z * cos_yaw
-                    self.velocity.x = vx
-                    self.velocity.z = vz
-
-                # Rotate velocity around ship's right axis (pitch)
-                if abs(pitch_delta) > 0.001:
-                    pitch_rad = math.radians(pitch_delta)
-                    cos_pitch = math.cos(pitch_rad)
-                    sin_pitch = math.sin(pitch_rad)
-                    vy = self.velocity.y * cos_pitch - self.velocity.z * sin_pitch
-                    vz = self.velocity.y * sin_pitch + self.velocity.z * cos_pitch
-                    self.velocity.y = vy
-                    self.velocity.z = vz
-
-            self.rotation_y += yaw_delta
-            self.rotation_x += pitch_delta
+            # Immediate turning - velocity unchanged, ship rotates freely
+            self.rotation_y += adjusted_x * self.mouse_sensitivity
+            self.rotation_x -= adjusted_y * self.mouse_sensitivity
             # No clamp - allow full 360 degree pitch for 6DOF flight
 
         keys = self.keys_held
