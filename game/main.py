@@ -42,6 +42,7 @@ from ui import MainMenu, JoinDialog, HUD, RespawnScreen
 from audio import AudioManager, AUDIO_DIR
 from particles import ParticleManager
 from powerups import PowerUpSpawner
+from minimap import Minimap
 
 
 class Game:
@@ -262,6 +263,10 @@ class Game:
         self.powerup_spawner = PowerUpSpawner(self.arena.half_size)
         print(f"[LOG] Power-up spawner created with {len(self.powerup_spawner.powerups)} power-ups")
 
+        # Create minimap
+        self.minimap = Minimap(self.arena.half_size)
+        print("[LOG] Minimap created")
+
         # Show HUD
         self.hud.show()
         self.hud.update_health(self.local_player.health)
@@ -382,6 +387,24 @@ class Game:
         self.hud.update_shield(self.local_player.shield)
         self.hud.update_speed(self.local_player.get_speed())
         self.hud.update_stats(self.local_player.kills, self.local_player.deaths)
+
+        # Update minimap
+        if hasattr(self, 'minimap') and self.minimap:
+            self.minimap.update_player(
+                self.local_player.position,
+                self.local_player.rotation_y
+            )
+
+            # Update other players on minimap
+            for pid, player in self.remote_players.items():
+                self.minimap.update_other_player(pid, player.position, player.is_alive)
+
+            # Update power-ups on minimap
+            if hasattr(self, 'powerup_spawner') and self.powerup_spawner:
+                for pid, powerup in self.powerup_spawner.powerups.items():
+                    self.minimap.update_powerup(
+                        pid, powerup.position, powerup.powerup_type, powerup.active
+                    )
 
         # Handle respawn
         if not self.local_player.is_alive:
@@ -662,6 +685,11 @@ class Game:
         if hasattr(self, 'powerup_spawner') and self.powerup_spawner:
             self.powerup_spawner.cleanup()
             self.powerup_spawner = None
+
+        if hasattr(self, 'minimap') and self.minimap:
+            self.minimap.cleanup()
+            destroy(self.minimap)
+            self.minimap = None
 
         # Reset state
         self.state = "menu"
