@@ -41,6 +41,13 @@ class Player(Entity):
         self.kills = 0
         self.deaths = 0
 
+        # Power-up effects
+        self.shield = 0
+        self.speed_multiplier = 1.0
+        self.damage_multiplier = 1.0
+        self.speed_boost_end = 0
+        self.damage_boost_end = 0
+
         # Track key states locally
         self.keys_held = {
             'w': False, 's': False, 'a': False, 'd': False,
@@ -301,10 +308,16 @@ class Player(Entity):
             else:
                 self.velocity = Vec3(0, 0, 0)
 
-        if self.velocity.length() > self.max_speed:
-            self.velocity = self.velocity.normalized() * self.max_speed
+        # Apply speed multiplier from power-ups
+        effective_max_speed = self.max_speed * self.speed_multiplier
+
+        if self.velocity.length() > effective_max_speed:
+            self.velocity = self.velocity.normalized() * effective_max_speed
 
         self.position += self.velocity * dt
+
+        # Update power-up timers
+        self.update_powerups()
 
         # Bounce off arena bounds
         if self.arena_bounds:
@@ -391,9 +404,25 @@ class Player(Entity):
         if not self.is_alive:
             return False
 
+        # Shield absorbs damage first
+        if self.shield > 0:
+            shield_absorbed = min(self.shield, amount)
+            self.shield -= shield_absorbed
+            amount -= shield_absorbed
+
+            # Flash purple for shield hit
+            for part in self.ship_parts:
+                if part.visible:
+                    original_color = part.color
+                    part.color = color.rgb(200, 50, 255)
+                    invoke(setattr, part, 'color', original_color, delay=0.1)
+
+            if amount <= 0:
+                return False
+
         self.health -= amount
 
-        # Flash red on hit
+        # Flash red on health damage
         for part in self.ship_parts:
             if part.visible:
                 original_color = part.color
@@ -404,6 +433,30 @@ class Player(Entity):
             self.die(attacker_id)
             return True
         return False
+
+    def apply_speed_boost(self, multiplier, duration):
+        """Apply a temporary speed boost."""
+        self.speed_multiplier = multiplier
+        self.speed_boost_end = time.time() + duration
+
+    def apply_damage_boost(self, multiplier, duration):
+        """Apply a temporary damage boost."""
+        self.damage_multiplier = multiplier
+        self.damage_boost_end = time.time() + duration
+
+    def apply_shield(self, amount):
+        """Add shield points."""
+        self.shield = min(100, self.shield + amount)
+
+    def update_powerups(self):
+        """Update power-up timers."""
+        current_time = time.time()
+        if self.speed_boost_end > 0 and current_time >= self.speed_boost_end:
+            self.speed_multiplier = 1.0
+            self.speed_boost_end = 0
+        if self.damage_boost_end > 0 and current_time >= self.damage_boost_end:
+            self.damage_multiplier = 1.0
+            self.damage_boost_end = 0
 
     def die(self, killer_id=None):
         self.is_alive = False
@@ -421,6 +474,13 @@ class Player(Entity):
         self.health = self.max_health
         self.is_alive = True
         self.velocity = Vec3(0, 0, 0)
+
+        # Reset power-ups
+        self.shield = 0
+        self.speed_multiplier = 1.0
+        self.damage_multiplier = 1.0
+        self.speed_boost_end = 0
+        self.damage_boost_end = 0
 
         if not self.is_local:
             self._show_ship()

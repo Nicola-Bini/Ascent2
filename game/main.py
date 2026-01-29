@@ -41,6 +41,7 @@ from networking import NetworkServer, NetworkClient, NetworkMessage, get_local_i
 from ui import MainMenu, JoinDialog, HUD, RespawnScreen
 from audio import AudioManager, AUDIO_DIR
 from particles import ParticleManager
+from powerups import PowerUpSpawner
 
 
 class Game:
@@ -257,6 +258,10 @@ class Game:
         )
         print(f"[LOG] Player {player_id} spawned at {spawn_pos}")
 
+        # Create power-up spawner
+        self.powerup_spawner = PowerUpSpawner(self.arena.half_size)
+        print(f"[LOG] Power-up spawner created with {len(self.powerup_spawner.powerups)} power-ups")
+
         # Show HUD
         self.hud.show()
         self.hud.update_health(self.local_player.health)
@@ -374,6 +379,7 @@ class Game:
 
         # Update HUD
         self.hud.update_health(self.local_player.health)
+        self.hud.update_shield(self.local_player.shield)
         self.hud.update_speed(self.local_player.get_speed())
         self.hud.update_stats(self.local_player.kills, self.local_player.deaths)
 
@@ -389,6 +395,24 @@ class Game:
         # Check projectile collisions (host authoritative)
         if self.is_host:
             self._check_collisions()
+
+        # Update power-ups
+        if hasattr(self, 'powerup_spawner') and self.powerup_spawner:
+            self.powerup_spawner.update()
+
+            # Check if player collected any power-ups
+            if self.local_player.is_alive:
+                collected = self.powerup_spawner.check_collection(self.local_player)
+                for effect in collected:
+                    # Show message about collected power-up
+                    if effect['type'] == 'health':
+                        self.hud.show_message(f"+{effect['amount']} Health", 2.0)
+                    elif effect['type'] == 'speed':
+                        self.hud.show_message("Speed Boost!", 2.0)
+                    elif effect['type'] == 'damage':
+                        self.hud.show_message("Damage Boost!", 2.0)
+                    elif effect['type'] == 'shield':
+                        self.hud.show_message(f"+{effect['amount']} Shield", 2.0)
 
         # Update player count
         total_players = 1 + len(self.remote_players)
@@ -634,6 +658,10 @@ class Game:
             self.arena = None
 
         self.projectile_manager.clear()
+
+        if hasattr(self, 'powerup_spawner') and self.powerup_spawner:
+            self.powerup_spawner.cleanup()
+            self.powerup_spawner = None
 
         # Reset state
         self.state = "menu"

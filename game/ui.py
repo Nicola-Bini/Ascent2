@@ -226,6 +226,27 @@ class HUD(Entity):
             color=color.white
         )
 
+        # Shield bar background
+        self.shield_bg = Entity(
+            parent=self,
+            model='quad',
+            color=color.rgb(40, 40, 40),
+            scale=(0.3, 0.02),
+            position=(-0.55, -0.46),
+            origin=(-0.5, 0)
+        )
+
+        # Shield bar fill
+        self.shield_bar = Entity(
+            parent=self,
+            model='quad',
+            color=color.rgb(150, 50, 255),  # Purple for shield
+            scale=(0, 0.015),  # Start at 0 width
+            position=(-0.55, -0.46),
+            origin=(-0.5, 0),
+            z=-0.01
+        )
+
         # Stats (kills/deaths)
         self.stats_text = Text(
             parent=self,
@@ -312,6 +333,11 @@ class HUD(Entity):
             self.health_bar.color = color.yellow
         else:
             self.health_bar.color = color.red
+
+    def update_shield(self, shield, max_shield=100):
+        """Update shield bar display."""
+        ratio = max(0, shield / max_shield)
+        self.shield_bar.scale_x = 0.3 * ratio
 
     def update_stats(self, kills, deaths):
         """Update kill/death display."""
