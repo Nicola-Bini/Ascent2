@@ -55,13 +55,13 @@ A Descent-inspired 6DOF (Six Degrees of Freedom) multiplayer space shooter built
   - Mid-level platforms
   - Cover blocks at various heights
   - Grid lines on floor for depth perception
-  - `unlit=True` on all geometry for consistent colors
-- **Color Scheme**:
+- **Color Scheme** (using normalized RGBA format):
   - Floor: Dark metallic gray-green (25, 30, 28)
   - Ceiling: Very dark (18, 20, 22)
   - Z-walls: Dark blue-gray (28, 32, 42)
   - X-walls: Dark rust/brown (38, 30, 26)
   - Tunnels: Dark grays with blue accent lights
+- **Rendering**: Full ambient lighting with `Color(1, 1, 1, 1)`
 
 ### Multiplayer
 - **Status**: Implemented
@@ -211,13 +211,26 @@ python auto_tester.py all       # Run all tests
 
 ## Development Notes
 
+### Color System (Ursina 7.0.0)
+**Important**: Use `Color(r/255, g/255, b/255, 1)` format instead of `color.rgb(r, g, b)`.
+The `color.rgb()` function does not work correctly in Ursina 7.0.0 and causes white textures.
+
+Example:
+```python
+# Correct - use normalized RGBA values
+color=Color(25/255, 30/255, 28/255, 1)
+
+# Incorrect - causes white rendering in Ursina 7.0.0
+color=color.rgb(25, 30, 28)
+```
+
 ### Color Palette (Industrial/Dark Theme)
-- Background: rgb(10, 12, 18)
-- Floor: rgb(25, 30, 28)
-- Walls (blue): rgb(28, 32, 42)
-- Walls (rust): rgb(38, 30, 26)
-- Metal dark: rgb(32, 35, 38)
-- Accent lights: rgb(70, 120, 150)
+- Background: Color(10/255, 12/255, 18/255, 1)
+- Floor: Color(25/255, 30/255, 28/255, 1)
+- Walls (blue): Color(28/255, 32/255, 42/255, 1)
+- Walls (rust): Color(38/255, 30/255, 26/255, 1)
+- Metal dark: Color(32/255, 35/255, 38/255, 1)
+- Accent lights: Color(70/255, 120/255, 150/255, 1)
 
 ### Performance Targets
 - 60 FPS minimum
@@ -226,7 +239,9 @@ python auto_tester.py all       # Run all tests
 - Maximum players: 8
 
 ### Recent Changes
-- Added `unlit=True` to arena entities for consistent colors
+- **Fixed texture colors**: Replaced `color.rgb()` with `Color(r/255, g/255, b/255, 1)` format
+- Removed `unlit=True` flags (caused white rendering in Ursina 7.0.0)
+- Set ambient light to `Color(1, 1, 1, 1)` for proper scene illumination
 - Implemented procedural audio generation
 - Added particle effects for weapons
 - Implemented power-up system with 4 types
