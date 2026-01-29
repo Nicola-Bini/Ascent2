@@ -40,6 +40,7 @@ from arena import Arena
 from networking import NetworkServer, NetworkClient, NetworkMessage, get_local_ip
 from ui import MainMenu, JoinDialog, HUD, RespawnScreen
 from audio import AudioManager, AUDIO_DIR
+from particles import ParticleManager
 
 
 class Game:
@@ -72,6 +73,7 @@ class Game:
 
         # Systems
         self.projectile_manager = ProjectileManager()
+        self.particle_manager = ParticleManager()
 
         # Audio
         self.audio_manager = AudioManager()
@@ -138,60 +140,50 @@ class Game:
         """Setup audio system with sounds and music."""
         print("[LOG] Setting up audio...")
 
-        # Load sound effects
-        try:
-            self.sfx_laser = Audio(
-                str(AUDIO_DIR / 'laser.wav'),
-                loop=False, autoplay=False, volume=0.5
-            )
-            self.sfx_missile = Audio(
-                str(AUDIO_DIR / 'missile.wav'),
-                loop=False, autoplay=False, volume=0.6
-            )
-            self.sfx_explosion = Audio(
-                str(AUDIO_DIR / 'explosion.wav'),
-                loop=False, autoplay=False, volume=0.7
-            )
-            self.sfx_hit = Audio(
-                str(AUDIO_DIR / 'hit.wav'),
-                loop=False, autoplay=False, volume=0.5
-            )
+        # Audio is loaded on-demand via play_sfx method
+        # Store paths for later use
+        self.audio_enabled = True
+        self.sfx_paths = {
+            'laser': str(AUDIO_DIR / 'laser.wav'),
+            'missile': str(AUDIO_DIR / 'missile.wav'),
+            'explosion': str(AUDIO_DIR / 'explosion.wav'),
+            'hit': str(AUDIO_DIR / 'hit.wav'),
+        }
 
-            # Background music
-            self.music_menu = Audio(
-                str(AUDIO_DIR / 'menu_music.wav'),
-                loop=True, autoplay=False, volume=0.3
-            )
-            self.music_game = Audio(
-                str(AUDIO_DIR / 'ambient_music.wav'),
-                loop=True, autoplay=False, volume=0.25
-            )
+        # Try to start background music using relative path from game folder
+        try:
+            # Use relative path from game directory
+            self.music_menu = Audio('sounds/menu_music', loop=True, autoplay=False, volume=0.3)
+            self.music_game = Audio('sounds/ambient_music', loop=True, autoplay=False, volume=0.25)
 
             # Start menu music
-            self.music_menu.play()
+            if self.music_menu.clip:
+                self.music_menu.play()
+                print("[LOG] Menu music started")
+            else:
+                print("[LOG] Menu music clip not loaded")
 
             print("[LOG] Audio setup complete")
         except Exception as e:
-            print(f"[LOG] Audio setup failed: {e}")
-            self.sfx_laser = None
-            self.sfx_missile = None
-            self.sfx_explosion = None
-            self.sfx_hit = None
+            print(f"[LOG] Audio setup error: {e}")
             self.music_menu = None
             self.music_game = None
+            self.audio_enabled = False
 
     def play_sfx(self, name):
         """Play a sound effect."""
+        if not self.audio_enabled:
+            return
         try:
-            if name == 'laser' and self.sfx_laser:
-                # Create new audio instance for overlapping sounds
-                Audio(str(AUDIO_DIR / 'laser.wav'), volume=0.4)
-            elif name == 'missile' and self.sfx_missile:
-                Audio(str(AUDIO_DIR / 'missile.wav'), volume=0.5)
-            elif name == 'explosion' and self.sfx_explosion:
-                Audio(str(AUDIO_DIR / 'explosion.wav'), volume=0.6)
-            elif name == 'hit' and self.sfx_hit:
-                Audio(str(AUDIO_DIR / 'hit.wav'), volume=0.4)
+            # Use relative path from game directory (Ursina looks in asset folder)
+            if name == 'laser':
+                Audio('sounds/laser', volume=0.4)
+            elif name == 'missile':
+                Audio('sounds/missile', volume=0.5)
+            elif name == 'explosion':
+                Audio('sounds/explosion', volume=0.6)
+            elif name == 'hit':
+                Audio('sounds/hit', volume=0.4)
         except Exception as e:
             pass  # Silently ignore audio errors
 
@@ -317,6 +309,13 @@ class Game:
             weapon='primary'
         )
 
+        # Muzzle flash effect
+        self.particle_manager.create_muzzle_flash(
+            shot_data["position"],
+            shot_data["direction"],
+            'primary'
+        )
+
         # Play laser sound
         self.play_sfx('laser')
 
@@ -339,6 +338,13 @@ class Game:
             direction=shot_data["direction"],
             owner_id=shot_data["owner_id"],
             weapon='secondary'
+        )
+
+        # Muzzle flash effect
+        self.particle_manager.create_muzzle_flash(
+            shot_data["position"],
+            shot_data["direction"],
+            'secondary'
         )
 
         # Play missile sound
@@ -547,11 +553,16 @@ class Game:
             attacker_id = hit["attacker_id"]
             damage = hit["damage"]
 
-            # Play hit/explosion sounds
+            # Play hit/explosion sounds and create particle effects
             if damage >= 40:  # Secondary weapon = explosion
                 self.play_sfx('explosion')
+                # Get hit position from the hit data if available
+                hit_pos = hit.get('position', self.local_player.position if target_id == self.local_player.player_id else Vec3(0, 0, 0))
+                self.particle_manager.create_explosion(hit_pos, 'large')
             else:
                 self.play_sfx('hit')
+                hit_pos = hit.get('position', Vec3(0, 0, 0))
+                self.particle_manager.create_explosion(hit_pos, 'small')
 
             # Apply damage
             if target_id == self.local_player.player_id:

@@ -84,22 +84,28 @@ def mix_audio(*tracks):
 
 
 def save_wav(data, filename, sample_rate=44100):
-    """Save audio data as WAV file."""
+    """Save audio data as WAV file in standard PCM format."""
     filepath = AUDIO_DIR / filename
+
+    # Convert all samples to 16-bit integers first
+    int_data = []
+    for sample in data:
+        # Clamp to [-1, 1]
+        sample = max(-1.0, min(1.0, float(sample)))
+        # Convert to 16-bit integer
+        int_sample = int(sample * 32767)
+        int_data.append(int_sample)
+
+    # Write WAV file with proper header
     with wave.open(str(filepath), 'w') as wav_file:
         wav_file.setnchannels(1)  # Mono
-        wav_file.setsampwidth(2)  # 16-bit
+        wav_file.setsampwidth(2)  # 16-bit (2 bytes)
         wav_file.setframerate(sample_rate)
+        # Write all frames at once
+        frames = b''.join(struct.pack('<h', s) for s in int_data)
+        wav_file.writeframes(frames)
 
-        # Convert to 16-bit integers
-        for sample in data:
-            # Clamp to [-1, 1]
-            sample = max(-1, min(1, sample))
-            # Convert to 16-bit integer
-            int_sample = int(sample * 32767)
-            wav_file.writeframes(struct.pack('<h', int_sample))
-
-    print(f"[AUDIO] Generated: {filename}")
+    print(f"[AUDIO] Generated: {filename} ({len(int_data)} samples)")
     return str(filepath)
 
 
