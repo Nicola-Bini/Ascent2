@@ -119,13 +119,14 @@ class Arena:
         """Add glowing accent strips to walls."""
         hx, hy, hz = self.half_size
         accent_color = color.rgb(60, 100, 120)
+        strip_width = self.size[0] * 0.9
 
         # Horizontal strips on walls
         positions = [
-            (0, hy - 5, hz - 0.3, sx, 0.5, 0.1) for sx in [self.size[0] * 0.9],
-            (0, -hy + 5, hz - 0.3, self.size[0] * 0.9, 0.5, 0.1),
-            (0, hy - 5, -hz + 0.3, self.size[0] * 0.9, 0.5, 0.1),
-            (0, -hy + 5, -hz + 0.3, self.size[0] * 0.9, 0.5, 0.1),
+            (0, hy - 5, hz - 0.3, strip_width, 0.5, 0.1),
+            (0, -hy + 5, hz - 0.3, strip_width, 0.5, 0.1),
+            (0, hy - 5, -hz + 0.3, strip_width, 0.5, 0.1),
+            (0, -hy + 5, -hz + 0.3, strip_width, 0.5, 0.1),
         ]
 
         for x, y, z, sx, sy, sz in positions:
