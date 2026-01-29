@@ -337,8 +337,8 @@ class Player(Entity):
 
         if mouse.locked:
             mv = mouse.velocity
-            yaw_amount = -mv[0] * self.mouse_sensitivity * 0.01
-            pitch_amount = mv[1] * self.mouse_sensitivity * 0.01
+            yaw_amount = -mv[0] * self.mouse_sensitivity * 0.15
+            pitch_amount = mv[1] * self.mouse_sensitivity * 0.15
 
             # Get current orientation vectors
             _, right_vec, up_vec = self._get_orientation_vectors()
