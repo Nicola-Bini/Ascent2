@@ -11,23 +11,27 @@ class Projectile(Entity):
         # Different visuals for each weapon type
         if weapon == 'secondary':
             proj_color = Color(255/255, 100/255, 50/255, 1)  # Orange-red
-            proj_scale = 0.5
+            proj_scale = (0.5, 0.5, 0.5)
+            proj_model = 'sphere'
             trail_scale = (0.3, 0.3, 1.2)
         elif weapon == 'spreadshot':
             proj_color = Color(150/255, 200/255, 255/255, 1)  # Light blue
-            proj_scale = 0.12
+            proj_scale = (0.12, 0.12, 0.12)
+            proj_model = 'sphere'
             trail_scale = (0.06, 0.06, 0.3)
         else:
-            proj_color = Color(200/255, 255/255, 100/255, 1)  # Yellow-green
-            proj_scale = 0.15
-            trail_scale = (0.08, 0.08, 0.4)
+            # Primary laser - long thick beam
+            proj_color = Color(100/255, 255/255, 150/255, 1)  # Bright green laser
+            proj_scale = (0.15, 0.15, 1.2)  # Thick and long
+            proj_model = 'cube'
+            trail_scale = (0.1, 0.1, 0.8)
 
         super().__init__(
-            model='sphere',
+            model=proj_model,
             color=proj_color,
             scale=proj_scale,
             position=position,
-            collider='sphere',
+            collider='box' if weapon == 'primary' else 'sphere',
             **kwargs
         )
 
@@ -41,9 +45,13 @@ class Projectile(Entity):
         self.spawn_time = time.time()
         self.active = True
         self.collidables = collidables if collidables else []
-        self.proj_radius = proj_scale * 0.5
+        self.proj_radius = proj_scale[0] if isinstance(proj_scale, tuple) else proj_scale * 0.5
         self.hit_obstacle = False
         self.hit_position = None
+
+        # Orient projectile to face direction of travel (for elongated shapes)
+        if weapon == 'primary':
+            self.look_at(self.position + self.direction)
 
         # Visual trail effect
         if weapon == 'secondary':
@@ -193,17 +201,17 @@ class ProjectileManager:
             projectile_id = self.next_id
             self.next_id += 1
 
-        # Different stats for each weapon type
+        # Different stats for each weapon type (speeds 3x faster)
         if weapon == 'secondary':
-            speed = 40  # Slower
+            speed = 120  # Slower missile (was 40)
             damage = 50  # More damage
             lifetime = 4.0  # Longer range
         elif weapon == 'spreadshot':
-            speed = 65  # Medium speed
+            speed = 195  # Medium speed (was 65)
             damage = 8  # Less damage per projectile (but 3 projectiles)
             lifetime = 2.0  # Medium range
         else:
-            speed = 70  # Fast
+            speed = 210  # Fast laser (was 70)
             damage = 12  # Less damage
             lifetime = 2.5
 

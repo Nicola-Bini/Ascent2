@@ -24,6 +24,10 @@ class Player(Entity):
         self.strafe_multiplier = 0.9
         self.vertical_multiplier = 0.85
 
+        # Atmosphere/air drag - ship stops when not thrusting
+        # 0 = space (no drag), 1 = heavy atmosphere, 0.3 = light atmosphere
+        self.atmosphere_drag = 0.3  # Default: light planetary atmosphere
+
         # Rotation settings
         self.roll_speed = 120
         self.mouse_sensitivity = 40
@@ -336,9 +340,14 @@ class Player(Entity):
                 self._emit_thruster_particle(accel.normalized())
         else:
             self.is_thrusting = False
-            drag = self.deceleration * dt
-            if self.velocity.length() > drag:
-                self.velocity -= self.velocity.normalized() * drag
+
+        # Apply atmosphere drag (always active - simulates air resistance)
+        # Higher drag = ship stops faster when not thrusting
+        if self.atmosphere_drag > 0 and self.velocity.length() > 0.1:
+            drag_force = self.atmosphere_drag * 10  # Scale for noticeable effect
+            drag_amount = drag_force * dt
+            if self.velocity.length() > drag_amount:
+                self.velocity -= self.velocity.normalized() * drag_amount
             else:
                 self.velocity = Vec3(0, 0, 0)
 
