@@ -9,29 +9,29 @@ class PowerUp(Entity):
 
     TYPES = {
         'health': {
-            'color': color.rgb(50, 255, 50),     # Green
-            'effect_color': color.rgb(100, 255, 100),
+            'color': Color(50/255, 255/255, 50/255, 1),     # Green
+            'effect_color': Color(100/255, 255/255, 100/255, 1),
             'duration': 0,  # Instant
             'respawn_time': 15,
             'description': '+25 Health',
         },
         'speed': {
-            'color': color.rgb(50, 150, 255),   # Blue
-            'effect_color': color.rgb(100, 200, 255),
+            'color': Color(50/255, 150/255, 255/255, 1),   # Blue
+            'effect_color': Color(100/255, 200/255, 255/255, 1),
             'duration': 10,
             'respawn_time': 20,
             'description': '1.5x Speed',
         },
         'damage': {
-            'color': color.rgb(255, 100, 50),   # Orange
-            'effect_color': color.rgb(255, 150, 100),
+            'color': Color(255/255, 100/255, 50/255, 1),   # Orange
+            'effect_color': Color(255/255, 150/255, 100/255, 1),
             'duration': 10,
             'respawn_time': 25,
             'description': '2x Damage',
         },
         'shield': {
-            'color': color.rgb(200, 50, 255),   # Purple
-            'effect_color': color.rgb(230, 100, 255),
+            'color': Color(200/255, 50/255, 255/255, 1),   # Purple
+            'effect_color': Color(230/255, 100/255, 255/255, 1),
             'duration': 0,  # Until depleted
             'respawn_time': 30,
             'description': '+50 Shield',

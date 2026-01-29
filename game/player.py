@@ -1,6 +1,7 @@
 """Player ship class with 6DOF controls and momentum-based physics."""
 from ursina import *
 import random
+import math
 
 
 class Player(Entity):
@@ -98,13 +99,13 @@ class Player(Entity):
         """Create a StarCraft Wraith-inspired ship model."""
         # Color scheme
         if self.is_local:
-            main_color = color.rgb(70, 85, 100)  # Blue-gray (Terran)
-            accent_color = color.rgb(50, 120, 180)  # Blue accent
-            engine_color = color.rgb(80, 150, 255)  # Blue engine glow
+            main_color = Color(70/255, 85/255, 100/255, 1)  # Blue-gray (Terran)
+            accent_color = Color(50/255, 120/255, 180/255, 1)  # Blue accent
+            engine_color = Color(80/255, 150/255, 255/255, 1)  # Blue engine glow
         else:
-            main_color = color.rgb(120, 60, 60)  # Red-brown (enemy)
-            accent_color = color.rgb(180, 80, 50)  # Orange accent
-            engine_color = color.rgb(255, 120, 50)  # Orange engine glow
+            main_color = Color(120/255, 60/255, 60/255, 1)  # Red-brown (enemy)
+            accent_color = Color(180/255, 80/255, 50/255, 1)  # Orange accent
+            engine_color = Color(255/255, 120/255, 50/255, 1)  # Orange engine glow
 
         # Main fuselage - elongated body
         self.fuselage = Entity(
@@ -119,7 +120,7 @@ class Player(Entity):
         self.cockpit = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(40, 60, 80) if self.is_local else color.rgb(80, 50, 40),
+            color=Color(40/255, 60/255, 80/255, 1) if self.is_local else Color(80/255, 50/255, 40/255, 1),
             scale=(0.8, 0.5, 1.2),
             position=(0, 0.2, 1.8),
             rotation=(15, 0, 0),
@@ -129,7 +130,7 @@ class Player(Entity):
         self.cockpit_glass = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(100, 180, 220) if self.is_local else color.rgb(200, 150, 100),
+            color=Color(100/255, 180/255, 220/255, 1) if self.is_local else Color(200/255, 150/255, 100/255, 1),
             scale=(0.5, 0.3, 0.6),
             position=(0, 0.35, 2.0),
             rotation=(20, 0, 0),
@@ -186,7 +187,7 @@ class Player(Entity):
         self.left_engine = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(50, 55, 65),
+            color=Color(50/255, 55/255, 65/255, 1),
             scale=(0.6, 0.5, 1.8),
             position=(-1.0, -0.2, -1.2),
         )
@@ -195,7 +196,7 @@ class Player(Entity):
         self.right_engine = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(50, 55, 65),
+            color=Color(50/255, 55/255, 65/255, 1),
             scale=(0.6, 0.5, 1.8),
             position=(1.0, -0.2, -1.2),
         )
@@ -289,8 +290,15 @@ class Player(Entity):
 
         if mouse.locked:
             mv = mouse.velocity
-            self.rotation_y += mv[0] * self.mouse_sensitivity
-            self.rotation_x -= mv[1] * self.mouse_sensitivity
+            # Transform mouse input based on roll angle for intuitive controls
+            roll_rad = math.radians(self.rotation_z)
+            cos_roll = math.cos(roll_rad)
+            sin_roll = math.sin(roll_rad)
+            # Rotate the mouse delta by the inverse of the roll
+            adjusted_x = mv[0] * cos_roll + mv[1] * sin_roll
+            adjusted_y = -mv[0] * sin_roll + mv[1] * cos_roll
+            self.rotation_y += adjusted_x * self.mouse_sensitivity
+            self.rotation_x -= adjusted_y * self.mouse_sensitivity
             self.rotation_x = clamp(self.rotation_x, -89, 89)
 
         keys = self.keys_held
@@ -496,7 +504,7 @@ class Player(Entity):
             for part in self.ship_parts:
                 if part.visible:
                     original_color = part.color
-                    part.color = color.rgb(200, 50, 255)
+                    part.color = Color(200/255, 50/255, 255/255, 1)
                     invoke(setattr, part, 'color', original_color, delay=0.1)
 
             if amount <= 0:
@@ -559,7 +567,7 @@ class Player(Entity):
             model='quad',
             position=spawn_pos,
             scale=random.uniform(0.2, 0.4),
-            color=color.rgb(100, 150, 255),  # Blue-white
+            color=Color(100/255, 150/255, 255/255, 1),  # Blue-white
             billboard=True,
         )
 

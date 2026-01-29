@@ -79,7 +79,7 @@ class Bot(Entity):
         self.body = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(150, 50, 50),
+            color=Color(150/255, 50/255, 50/255, 1),
             scale=(1.2, 0.4, 2),
         )
 
@@ -87,14 +87,14 @@ class Bot(Entity):
         self.left_wing = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(120, 40, 40),
+            color=Color(120/255, 40/255, 40/255, 1),
             scale=(2, 0.1, 1),
             position=(-1.2, 0, 0),
         )
         self.right_wing = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(120, 40, 40),
+            color=Color(120/255, 40/255, 40/255, 1),
             scale=(2, 0.1, 1),
             position=(1.2, 0, 0),
         )
@@ -103,7 +103,7 @@ class Bot(Entity):
         self.cockpit = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(80, 30, 30),
+            color=Color(80/255, 30/255, 30/255, 1),
             scale=(0.6, 0.3, 0.8),
             position=(0, 0.2, 0.5),
         )
@@ -112,7 +112,7 @@ class Bot(Entity):
         self.engine = Entity(
             parent=self,
             model='cube',
-            color=color.rgb(255, 100, 50),
+            color=Color(255/255, 100/255, 50/255, 1),
             scale=(0.4, 0.2, 0.3),
             position=(0, 0, -1.2),
         )

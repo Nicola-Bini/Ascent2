@@ -10,15 +10,15 @@ class Projectile(Entity):
                  speed=60, damage=15, lifetime=3.0, weapon='primary', **kwargs):
         # Different visuals for each weapon type
         if weapon == 'secondary':
-            proj_color = color.rgb(255, 100, 50)  # Orange-red
+            proj_color = Color(255/255, 100/255, 50/255, 1)  # Orange-red
             proj_scale = 0.5
             trail_scale = (0.3, 0.3, 1.2)
         elif weapon == 'spreadshot':
-            proj_color = color.rgb(150, 200, 255)  # Light blue
+            proj_color = Color(150/255, 200/255, 255/255, 1)  # Light blue
             proj_scale = 0.12
             trail_scale = (0.06, 0.06, 0.3)
         else:
-            proj_color = color.rgb(200, 255, 100)  # Yellow-green
+            proj_color = Color(200/255, 255/255, 100/255, 1)  # Yellow-green
             proj_scale = 0.15
             trail_scale = (0.08, 0.08, 0.4)
 
@@ -43,11 +43,11 @@ class Projectile(Entity):
 
         # Visual trail effect
         if weapon == 'secondary':
-            trail_color = color.rgb(255, 150, 50)
+            trail_color = Color(255/255, 150/255, 50/255, 1)
         elif weapon == 'spreadshot':
-            trail_color = color.rgb(100, 150, 255)
+            trail_color = Color(100/255, 150/255, 255/255, 1)
         else:
-            trail_color = color.rgb(150, 200, 80)
+            trail_color = Color(150/255, 200/255, 80/255, 1)
         self.trail = Entity(
             parent=self,
             model='cube',
@@ -90,7 +90,7 @@ class Explosion(Entity):
     def __init__(self, position, size=3.0, duration=0.5, **kwargs):
         super().__init__(
             model='sphere',
-            color=color.rgb(255, 200, 50),
+            color=Color(255/255, 200/255, 50/255, 1),
             scale=0.1,
             position=position,
             **kwargs
@@ -105,20 +105,20 @@ class Explosion(Entity):
         self.core = Entity(
             parent=self,
             model='sphere',
-            color=color.rgb(255, 255, 200),
+            color=Color(255/255, 255/255, 200/255, 1),
             scale=0.6
         )
 
         # Start expansion animation
         self.animate_scale(size, duration=duration * 0.3, curve=curve.out_expo)
-        self.animate_color(color.rgb(255, 100, 30), duration=duration * 0.5)
+        self.animate_color(Color(255/255, 100/255, 30/255, 1), duration=duration * 0.5)
 
         # Schedule fadeout
         invoke(self._fade_out, delay=duration * 0.3)
 
     def _fade_out(self):
         """Fade out and destroy."""
-        self.animate_color(color.rgba(255, 50, 20, 0), duration=self.duration * 0.7)
+        self.animate_color(Color(255/255, 50/255, 20/255, 0), duration=self.duration * 0.7)
         self.animate_scale(self.max_size * 1.5, duration=self.duration * 0.7)
         invoke(self._destroy, delay=self.duration * 0.7)
 
@@ -178,7 +178,7 @@ class ProjectileManager:
         for _ in range(8):
             debris = Entity(
                 model='cube',
-                color=color.rgb(255, random.randint(100, 200), 50),
+                color=Color(255/255, random.randint(100, 200)/255, 50/255, 1),
                 scale=random.uniform(0.1, 0.3),
                 position=position
             )

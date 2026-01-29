@@ -150,8 +150,8 @@ class ThrusterEffect:
         self.active = False
 
         # Thruster colors
-        self.color_inner = color.rgb(100, 150, 255)  # Blue-white
-        self.color_outer = color.rgb(50, 80, 200)    # Darker blue
+        self.color_inner = Color(100/255, 150/255, 255/255, 1)  # Blue-white
+        self.color_outer = Color(50/255, 80/255, 200/255, 1)    # Darker blue
 
     def update(self, is_thrusting, thrust_direction=None):
         """Update the thruster effect."""
@@ -188,10 +188,10 @@ class MuzzleFlash(Entity):
 
     def __init__(self, position, direction, weapon_type='primary'):
         if weapon_type == 'primary':
-            flash_color = color.rgb(100, 200, 255)  # Cyan
+            flash_color = Color(100/255, 200/255, 255/255, 1)  # Cyan
             flash_size = 0.8
         else:
-            flash_color = color.rgb(255, 150, 50)   # Orange
+            flash_color = Color(255/255, 150/255, 50/255, 1)   # Orange
             flash_size = 1.2
 
         super().__init__(
@@ -232,8 +232,8 @@ class ExplosionEffect:
             velocity_range=preset['radius'] * 3,
             lifetime=preset['lifetime'],
             size=preset['particle_size'],
-            color_start=color.rgb(255, 200, 50),
-            color_end=color.rgb(255, 80, 20),
+            color_start=Color(255/255, 200/255, 50/255, 1),
+            color_end=Color(255/255, 80/255, 20/255, 1),
             spread=2
         )
 
@@ -244,8 +244,8 @@ class ExplosionEffect:
             velocity_range=preset['radius'] * 5,
             lifetime=preset['lifetime'] * 1.5,
             size=preset['particle_size'] * 0.5,
-            color_start=color.rgb(255, 100, 30),
-            color_end=color.rgb(100, 30, 10),
+            color_start=Color(255/255, 100/255, 30/255, 1),
+            color_end=Color(100/255, 30/255, 10/255, 1),
             spread=3
         )
 
@@ -256,8 +256,8 @@ class ExplosionEffect:
             velocity_range=preset['radius'],
             lifetime=preset['lifetime'] * 2,
             size=preset['particle_size'] * 1.5,
-            color_start=color.rgb(80, 80, 80),
-            color_end=color.rgb(40, 40, 40),
+            color_start=Color(80/255, 80/255, 80/255, 1),
+            color_end=Color(40/255, 40/255, 40/255, 1),
             spread=1
         )
 
@@ -270,13 +270,13 @@ class ProjectileTrail:
         self.weapon_type = weapon_type
 
         if weapon_type == 'primary':
-            self.color_start = color.rgb(80, 180, 255)
-            self.color_end = color.rgb(40, 80, 150)
+            self.color_start = Color(80/255, 180/255, 255/255, 1)
+            self.color_end = Color(40/255, 80/255, 150/255, 1)
             self.emit_rate = 60
             self.particle_size = 0.15
         else:
-            self.color_start = color.rgb(255, 120, 40)
-            self.color_end = color.rgb(150, 50, 20)
+            self.color_start = Color(255/255, 120/255, 40/255, 1)
+            self.color_end = Color(150/255, 50/255, 20/255, 1)
             self.emit_rate = 40
             self.particle_size = 0.25
 
