@@ -113,11 +113,11 @@ class Game:
         """Setup scene lighting."""
         # Set dark background
         window.color = color.rgb(10, 10, 30)
-        camera.clip_plane_far = 500
+        camera.clip_plane_far = 800
 
-        # Create a simple dark sky sphere
+        # Create a simple dark sky sphere - large enough for 200x80x200 arena
         self.sky = Entity(
-            model="sphere", scale=400, color=color.rgb(15, 15, 35), double_sided=True
+            model="sphere", scale=600, color=color.rgb(15, 15, 35), double_sided=True
         )
 
         # Moderate ambient light
@@ -174,18 +174,18 @@ class Game:
         self.main_menu.hide()
         self.join_dialog.hide()
 
-        # Create arena
+        # Create arena - use full size that matches the tunnel/obstacle layout
         print("[LOG] Creating arena...")
-        self.arena = Arena(size=(50, 30, 50))
+        self.arena = Arena(size=(200, 80, 200))
         print(
             f"[LOG] Arena created with {len(self.arena.walls)} walls and {len(self.arena.obstacles)} obstacles"
         )
 
-        # Create local player - different spawn for host vs client
+        # Create local player - spawn in corners away from central tunnels
         if player_id == 0:
-            spawn_pos = Vec3(-15, 0, -15)  # Host spawns in one corner
+            spawn_pos = Vec3(-60, 0, -60)  # Host spawns in one corner
         else:
-            spawn_pos = Vec3(15, 0, 15)  # Clients spawn in opposite corner
+            spawn_pos = Vec3(60, 0, 60)  # Clients spawn in opposite corner
 
         self.local_player = Player(
             player_id=player_id,
