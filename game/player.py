@@ -32,20 +32,22 @@ class Player(Entity):
         self.roll_speed = 120
         self.mouse_sensitivity = 40
 
-        # Combat - Primary weapon (rapid fire)
+        # Combat - Primary weapon (rapid fire) - 2x faster
         self.max_health = 100
         self.health = self.max_health
         self.is_alive = True
         self.respawn_time = 3.0
-        self.primary_cooldown = 0.12
+        self.primary_cooldown = 0.06  # 2x faster (was 0.12)
         self.last_primary_time = 0
+        self.primary_side = 1  # Alternates between -1 (left) and 1 (right)
 
-        # Combat - Secondary weapon (slow powerful shot)
-        self.secondary_cooldown = 1.95  # 30% longer cooldown for bigger explosion
+        # Combat - Secondary weapon (slow powerful shot) - 2x faster
+        self.secondary_cooldown = 0.975  # 2x faster (was 1.95)
         self.last_secondary_time = 0
+        self.secondary_side = 1
 
-        # Combat - Spreadshot weapon (3 projectiles)
-        self.spreadshot_cooldown = 0.4
+        # Combat - Spreadshot weapon (3 projectiles) - 2x faster
+        self.spreadshot_cooldown = 0.2  # 2x faster (was 0.4)
         self.last_spreadshot_time = 0
 
         # Stats
@@ -449,8 +451,12 @@ class Player(Entity):
 
     def shoot_primary(self):
         self.last_primary_time = time.time()
+        # Fire from alternating wing weapon pods
+        weapon_offset = self.right * (3.2 * self.primary_side) + self.forward * 2.0
+        spawn_pos = self.position + weapon_offset
+        self.primary_side *= -1  # Alternate sides
         return {
-            'position': (self.position.x, self.position.y, self.position.z),
+            'position': (spawn_pos.x, spawn_pos.y, spawn_pos.z),
             'direction': (self.forward.x, self.forward.y, self.forward.z),
             'owner_id': self.player_id,
             'weapon': 'primary'
@@ -458,8 +464,12 @@ class Player(Entity):
 
     def shoot_secondary(self):
         self.last_secondary_time = time.time()
+        # Fire from alternating wing weapon pods
+        weapon_offset = self.right * (3.2 * self.secondary_side) + self.forward * 2.0
+        spawn_pos = self.position + weapon_offset
+        self.secondary_side *= -1  # Alternate sides
         return {
-            'position': (self.position.x, self.position.y, self.position.z),
+            'position': (spawn_pos.x, spawn_pos.y, spawn_pos.z),
             'direction': (self.forward.x, self.forward.y, self.forward.z),
             'owner_id': self.player_id,
             'weapon': 'secondary'
@@ -469,7 +479,7 @@ class Player(Entity):
         return self.is_alive and (time.time() - self.last_spreadshot_time) >= self.spreadshot_cooldown
 
     def shoot_spreadshot(self):
-        """Fire spreadshot - returns 3 projectile directions."""
+        """Fire spreadshot - returns 3 projectile directions from both weapon pods."""
         self.last_spreadshot_time = time.time()
 
         # Get forward and right vectors
@@ -483,7 +493,6 @@ class Player(Entity):
         dir_center = (fwd.x, fwd.y, fwd.z)
 
         # Left shot (rotated around up axis)
-        import math
         cos_a = math.cos(spread_angle)
         sin_a = math.sin(spread_angle)
         dir_left = (
@@ -499,8 +508,12 @@ class Player(Entity):
             fwd.z * cos_a + right.z * sin_a
         )
 
+        # Fire from both weapon pods
+        left_pod = self.position + right * -3.2 + fwd * 2.0
+        right_pod = self.position + right * 3.2 + fwd * 2.0
+
         return {
-            'position': (self.position.x, self.position.y, self.position.z),
+            'positions': [(left_pod.x, left_pod.y, left_pod.z), (right_pod.x, right_pod.y, right_pod.z)],
             'directions': [dir_center, dir_left, dir_right],
             'owner_id': self.player_id,
             'weapon': 'spreadshot'

@@ -376,27 +376,27 @@ class Game:
             self.client.send_shoot(shot_data)
 
     def _shoot_spreadshot(self):
-        """Handle spreadshot weapon (3 projectiles in spread pattern)."""
+        """Handle spreadshot weapon (3 projectiles from each weapon pod)."""
         if not self.local_player or not self.local_player.can_shoot_spreadshot():
             return
 
         shot_data = self.local_player.shoot_spreadshot()
 
-        # Spawn 3 projectiles
-        for direction in shot_data["directions"]:
-            self.projectile_manager.spawn(
-                position=shot_data["position"],
-                direction=direction,
-                owner_id=shot_data["owner_id"],
-                weapon='spreadshot'
+        # Spawn 3 projectiles from each weapon pod (6 total)
+        for pod_pos in shot_data["positions"]:
+            for direction in shot_data["directions"]:
+                self.projectile_manager.spawn(
+                    position=pod_pos,
+                    direction=direction,
+                    owner_id=shot_data["owner_id"],
+                    weapon='spreadshot'
+                )
+            # Muzzle flash at each pod
+            self.particle_manager.create_muzzle_flash(
+                pod_pos,
+                shot_data["directions"][0],
+                'primary'
             )
-
-        # Muzzle flash effect (larger for spreadshot)
-        self.particle_manager.create_muzzle_flash(
-            shot_data["position"],
-            shot_data["directions"][0],  # Center direction
-            'primary'  # Use primary style but will be brighter
-        )
 
         # Play laser sound
         self.play_sfx('laser')
