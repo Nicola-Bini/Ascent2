@@ -795,6 +795,12 @@ class Player(Entity):
         self.damage_boost_end = 0
 
         if not self.is_local:
+            # Ensure entity and container are visible
+            self.visible = True
+            self.enabled = True
+            if hasattr(self, 'ship_container'):
+                self.ship_container.visible = True
+                self.ship_container.enabled = True
             self._show_ship()
 
         if position:
