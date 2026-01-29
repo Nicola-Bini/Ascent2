@@ -25,7 +25,7 @@ class Player(Entity):
         self.vertical_multiplier = 0.85
 
         # Boost settings (shift key)
-        self.boost_multiplier = 10  # 10x speed/accel when boosting
+        self.boost_multiplier = 2  # 2x speed/accel when boosting
         self.boost_duration = 3.0  # seconds
         self.boost_cooldown = 10.0  # seconds to recharge
         self.boost_active = False
@@ -496,10 +496,8 @@ class Player(Entity):
 
     def shoot_secondary(self):
         self.last_secondary_time = time.time()
-        # Fire from alternating wing weapon pods
-        weapon_offset = self.right * (3.2 * self.secondary_side) + self.forward * 2.0
-        spawn_pos = self.position + weapon_offset
-        self.secondary_side *= -1  # Alternate sides
+        # Fire from center, slightly forward (accurate aiming)
+        spawn_pos = self.position + self.forward * 3.0
         return {
             'position': (spawn_pos.x, spawn_pos.y, spawn_pos.z),
             'direction': (self.forward.x, self.forward.y, self.forward.z),
