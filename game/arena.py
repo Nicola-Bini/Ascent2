@@ -20,95 +20,91 @@ class Arena:
         """Create arena boundary with different textures for floor/walls/ceiling."""
         sx, sy, sz = self.size
         hx, hy, hz = self.half_size
+        wall_thickness = 1
 
         # Floor - dark metal plating with green tint
         floor_color = color.rgb(25, 35, 30)
         floor = Entity(
-            model='quad',
+            model='cube',
             color=floor_color,
-            scale=(sx, sz),
-            position=(0, -hy, 0),
-            rotation=(90, 0, 0),
+            scale=(sx, wall_thickness, sz),
+            position=(0, -hy - wall_thickness/2, 0),
             collider='box',
         )
         self.walls.append(floor)
 
         # Floor grid pattern
-        grid_color = color.rgb(40, 55, 45)
-        for i in range(-int(hx), int(hx) + 1, 15):
+        grid_color = color.rgb(45, 60, 50)
+        for i in range(-int(hx) + 15, int(hx), 30):
             line = Entity(
                 model='cube',
                 color=grid_color,
-                scale=(0.3, 0.02, sz),
-                position=(i, -hy + 0.02, 0),
+                scale=(0.5, 0.1, sz),
+                position=(i, -hy + 0.1, 0),
             )
             self.walls.append(line)
-        for i in range(-int(hz), int(hz) + 1, 15):
+        for i in range(-int(hz) + 15, int(hz), 30):
             line = Entity(
                 model='cube',
                 color=grid_color,
-                scale=(sx, 0.02, 0.3),
-                position=(0, -hy + 0.02, i),
+                scale=(sx, 0.1, 0.5),
+                position=(0, -hy + 0.1, i),
             )
             self.walls.append(line)
 
-        # Ceiling - darker with industrial panels
+        # Ceiling - darker
         ceiling_color = color.rgb(20, 25, 30)
         ceiling = Entity(
-            model='quad',
+            model='cube',
             color=ceiling_color,
-            scale=(sx, sz),
-            position=(0, hy, 0),
-            rotation=(-90, 0, 0),
+            scale=(sx, wall_thickness, sz),
+            position=(0, hy + wall_thickness/2, 0),
             collider='box',
         )
         self.walls.append(ceiling)
 
         # Ceiling support beams
         beam_color = color.rgb(35, 40, 45)
-        for i in range(-int(hx) + 20, int(hx), 40):
+        for i in range(-int(hx) + 25, int(hx), 50):
             beam = Entity(
                 model='cube',
                 color=beam_color,
-                scale=(4, 3, sz),
-                position=(i, hy - 1.5, 0),
+                scale=(4, 4, sz),
+                position=(i, hy - 2, 0),
             )
             self.walls.append(beam)
 
         # Walls - blue-gray tint for Z walls (front/back)
         wall_z_color = color.rgb(35, 45, 55)
         self.walls.append(Entity(
-            model='quad',
+            model='cube',
             color=wall_z_color,
-            scale=(sx, sy),
-            position=(0, 0, hz),
-            rotation=(0, 180, 0),
+            scale=(sx, sy, wall_thickness),
+            position=(0, 0, hz + wall_thickness/2),
             collider='box',
         ))
         self.walls.append(Entity(
-            model='quad',
+            model='cube',
             color=wall_z_color,
-            scale=(sx, sy),
-            position=(0, 0, -hz),
+            scale=(sx, sy, wall_thickness),
+            position=(0, 0, -hz - wall_thickness/2),
             collider='box',
         ))
 
         # Walls - rust/orange tint for X walls (left/right)
         wall_x_color = color.rgb(55, 40, 35)
         self.walls.append(Entity(
-            model='quad',
+            model='cube',
             color=wall_x_color,
-            scale=(sz, sy),
-            position=(-hx, 0, 0),
-            rotation=(0, 90, 0),
+            scale=(wall_thickness, sy, sz),
+            position=(-hx - wall_thickness/2, 0, 0),
             collider='box',
         ))
         self.walls.append(Entity(
-            model='quad',
+            model='cube',
             color=wall_x_color,
-            scale=(sz, sy),
-            position=(hx, 0, 0),
-            rotation=(0, -90, 0),
+            scale=(wall_thickness, sy, sz),
+            position=(hx + wall_thickness/2, 0, 0),
             collider='box',
         ))
 
