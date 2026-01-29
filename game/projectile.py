@@ -204,7 +204,7 @@ class ProjectileManager:
         # Different stats for each weapon type (speeds 3x faster)
         if weapon == 'secondary':
             speed = 120  # Slower missile (was 40)
-            damage = 50  # More damage
+            damage = 100  # Direct hit kills (100 = full health)
             lifetime = 4.0  # Longer range
         elif weapon == 'spreadshot':
             speed = 195  # Medium speed (was 65)
