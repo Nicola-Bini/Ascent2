@@ -483,27 +483,46 @@ class Player(Entity):
 
     def shoot_primary(self):
         self.last_primary_time = time.time()
+        # Calculate aim direction from camera rotation (matches crosshair)
+        aim_dir = self._get_aim_direction()
+        # Calculate right vector for wing offset
+        world_up = Vec3(0, 1, 0)
+        right_dir = aim_dir.cross(world_up).normalized()
         # Fire from alternating wing weapon pods, further out
-        weapon_offset = self.right * (3.2 * self.primary_side) + self.forward * 8.0
+        weapon_offset = right_dir * (3.2 * self.primary_side) + aim_dir * 8.0
         spawn_pos = self.position + weapon_offset
         self.primary_side *= -1  # Alternate sides
         return {
             'position': (spawn_pos.x, spawn_pos.y, spawn_pos.z),
-            'direction': (self.forward.x, self.forward.y, self.forward.z),
+            'direction': (aim_dir.x, aim_dir.y, aim_dir.z),
             'owner_id': self.player_id,
             'weapon': 'primary'
         }
 
     def shoot_secondary(self):
         self.last_secondary_time = time.time()
-        # Fire from center, slightly forward (accurate aiming)
-        spawn_pos = self.position + self.forward * 3.0
+        # Calculate aim direction from camera rotation (matches crosshair)
+        aim_dir = self._get_aim_direction()
+        spawn_pos = self.position + aim_dir * 3.0
         return {
             'position': (spawn_pos.x, spawn_pos.y, spawn_pos.z),
-            'direction': (self.forward.x, self.forward.y, self.forward.z),
+            'direction': (aim_dir.x, aim_dir.y, aim_dir.z),
             'owner_id': self.player_id,
             'weapon': 'secondary'
         }
+
+    def _get_aim_direction(self):
+        """Calculate forward direction based on camera rotation angles."""
+        # Convert rotation to radians
+        pitch = math.radians(self.rotation_x)
+        yaw = math.radians(self.rotation_y)
+
+        # Calculate direction vector (standard FPS camera math)
+        dir_x = math.cos(pitch) * math.sin(yaw)
+        dir_y = -math.sin(pitch)
+        dir_z = math.cos(pitch) * math.cos(yaw)
+
+        return Vec3(dir_x, dir_y, dir_z).normalized()
 
     def can_shoot_spreadshot(self):
         return self.is_alive and (time.time() - self.last_spreadshot_time) >= self.spreadshot_cooldown
