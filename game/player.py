@@ -37,7 +37,7 @@ class Player(Entity):
         self.last_primary_time = 0
 
         # Combat - Secondary weapon (slow powerful shot)
-        self.secondary_cooldown = 1.5
+        self.secondary_cooldown = 1.95  # 30% longer cooldown for bigger explosion
         self.last_secondary_time = 0
 
         # Combat - Spreadshot weapon (3 projectiles)

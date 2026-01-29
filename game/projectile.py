@@ -293,7 +293,7 @@ class ProjectileManager:
 
                 # Create explosion for secondary weapon hitting obstacles
                 if proj.weapon == 'secondary':
-                    self.create_explosion(proj.hit_position, size=6.0)  # Bigger explosion
+                    self.create_explosion(proj.hit_position, size=24.0)  # 4x bigger explosion
                 continue
 
             # Check arena bounds
@@ -307,7 +307,7 @@ class ProjectileManager:
 
                 # Create explosion for secondary weapon hitting walls
                 if proj.weapon == 'secondary':
-                    self.create_explosion(pos, size=6.0)  # Bigger explosion
+                    self.create_explosion(pos, size=24.0)  # 4x bigger explosion
                     obstacle_hits.append({
                         'position': Vec3(pos),
                         'weapon': proj.weapon
@@ -338,7 +338,7 @@ class ProjectileManager:
 
                     # Create explosion for secondary weapon
                     if proj.weapon == 'secondary':
-                        self.create_explosion(proj.position, size=7.0)  # Bigger explosion
+                        self.create_explosion(proj.position, size=28.0)  # 4x bigger explosion
                     break
 
         # Clean up
