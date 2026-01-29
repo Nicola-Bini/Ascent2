@@ -343,23 +343,13 @@ class Player(Entity):
         strafe_input = (1 if keys['d'] else 0) - (1 if keys['a'] else 0)
         vertical_input = (1 if keys['space'] else 0) - (1 if keys['control'] else 0)
 
-        # Handle boost (shift key)
-        if keys['shift'] and self.boost_recharge >= self.boost_cooldown and not self.boost_active:
-            # Activate boost
-            self.boost_active = True
-            self.boost_timer = self.boost_duration
-            self.boost_recharge = 0
+        # Handle boost (shift key) - always active while held, cancels inertia
+        was_boosting = self.boost_active
+        self.boost_active = keys['shift']
 
-        # Update boost timers
-        if self.boost_active:
-            self.boost_timer -= dt
-            if self.boost_timer <= 0:
-                self.boost_active = False
-                self.boost_timer = 0
-        else:
-            # Recharge boost when not active
-            if self.boost_recharge < self.boost_cooldown:
-                self.boost_recharge += dt
+        # Cancel all inertia when boost is first activated
+        if self.boost_active and not was_boosting:
+            self.velocity = Vec3(0, 0, 0)
 
         # Calculate effective acceleration and max speed
         current_accel = self.acceleration * (self.boost_multiplier if self.boost_active else 1)

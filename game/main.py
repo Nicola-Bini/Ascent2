@@ -509,6 +509,8 @@ class Game:
                         owner_id=shot_data['owner_id'],
                         weapon='primary'
                     )
+                    # Play bot shooting sound
+                    self.play_sfx('laser')
 
                 # Update bot on minimap
                 if hasattr(self, 'minimap') and self.minimap:

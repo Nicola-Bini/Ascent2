@@ -3,6 +3,9 @@ from ursina import *
 import random
 import math
 
+# Bot visual scale multiplier
+BOT_SCALE = 20.0
+
 
 class BotState:
     """Possible bot states."""
@@ -55,7 +58,7 @@ class Bot(Entity):
             self.accuracy = 0.4  # 40% accuracy
             self.reaction_time = 1.0
             self.aggression = 0.3
-            self.fire_rate = 1.5
+            self.fire_rate = 0.4  # Shoots faster
             self.detection_range = 60
         elif difficulty == 'hard':
             self.speed = 40
@@ -63,7 +66,7 @@ class Bot(Entity):
             self.accuracy = 0.85
             self.reaction_time = 0.2
             self.aggression = 0.8
-            self.fire_rate = 0.3
+            self.fire_rate = 0.08  # Very fast shooting
             self.detection_range = 120
         else:  # medium
             self.speed = 30
@@ -71,14 +74,17 @@ class Bot(Entity):
             self.accuracy = 0.6
             self.reaction_time = 0.5
             self.aggression = 0.5
-            self.fire_rate = 0.8
+            self.fire_rate = 0.15  # Shoots much faster
             self.detection_range = 80
 
     def _create_model(self):
         """Create the bot's visual model."""
+        # Container for scaling (20x bigger)
+        self.model_container = Entity(parent=self, scale=BOT_SCALE)
+
         # Main body - red tinted to distinguish from player
         self.body = Entity(
-            parent=self,
+            parent=self.model_container,
             model='cube',
             color=Color(150/255, 50/255, 50/255, 1),
             scale=(1.2, 0.4, 2),
@@ -86,14 +92,14 @@ class Bot(Entity):
 
         # Wings
         self.left_wing = Entity(
-            parent=self,
+            parent=self.model_container,
             model='cube',
             color=Color(120/255, 40/255, 40/255, 1),
             scale=(2, 0.1, 1),
             position=(-1.2, 0, 0),
         )
         self.right_wing = Entity(
-            parent=self,
+            parent=self.model_container,
             model='cube',
             color=Color(120/255, 40/255, 40/255, 1),
             scale=(2, 0.1, 1),
@@ -102,7 +108,7 @@ class Bot(Entity):
 
         # Cockpit
         self.cockpit = Entity(
-            parent=self,
+            parent=self.model_container,
             model='cube',
             color=Color(80/255, 30/255, 30/255, 1),
             scale=(0.6, 0.3, 0.8),
@@ -111,7 +117,7 @@ class Bot(Entity):
 
         # Engine glow
         self.engine = Entity(
-            parent=self,
+            parent=self.model_container,
             model='cube',
             color=Color(255/255, 100/255, 50/255, 1),
             scale=(0.4, 0.2, 0.3),
