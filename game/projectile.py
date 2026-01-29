@@ -11,9 +11,9 @@ class Projectile(Entity):
         # Different visuals for each weapon type
         if weapon == 'secondary':
             proj_color = Color(255/255, 100/255, 50/255, 1)  # Orange-red
-            proj_scale = (0.5, 0.5, 0.5)
+            proj_scale = (2.0, 2.0, 2.0)  # 4x bigger
             proj_model = 'sphere'
-            trail_scale = (0.3, 0.3, 1.2)
+            trail_scale = (1.2, 1.2, 4.8)  # 4x bigger trail
         elif weapon == 'spreadshot':
             proj_color = Color(150/255, 200/255, 255/255, 1)  # Light blue
             proj_scale = (0.12, 0.12, 0.12)
@@ -203,9 +203,9 @@ class ProjectileManager:
 
         # Different stats for each weapon type (speeds 3x faster)
         if weapon == 'secondary':
-            speed = 120  # Slower missile (was 40)
+            speed = 350  # Faster missile
             damage = 100  # Direct hit kills (100 = full health)
-            lifetime = 4.0  # Longer range
+            lifetime = 10.0  # Much longer range
         elif weapon == 'spreadshot':
             speed = 195  # Medium speed (was 65)
             damage = 8  # Less damage per projectile (but 3 projectiles)

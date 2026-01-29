@@ -43,6 +43,7 @@ from audio import AudioManager, AUDIO_DIR
 from particles import ParticleManager
 from powerups import PowerUpSpawner
 from minimap import Minimap
+from bot import Bot
 
 
 class Game:
@@ -65,6 +66,7 @@ class Game:
         self.is_host = False
         self.local_player = None
         self.remote_players = {}  # player_id -> Player
+        self.bots = []  # AI enemies
         self.arena = None
 
         # Networking
@@ -267,6 +269,23 @@ class Game:
         )
         print(f"[LOG] Player {player_id} spawned at {spawn_pos}")
 
+        # Spawn enemy bots
+        self.bots = []
+        bot_positions = [
+            Vec3(800, 100, 800),   # Bot 1 - upper quadrant
+            Vec3(-800, -100, -800),  # Bot 2 - lower opposite quadrant
+        ]
+        for i, bot_pos in enumerate(bot_positions):
+            bot = Bot(
+                bot_id=1000 + i,  # High IDs to avoid conflict with players
+                position=bot_pos,
+                arena_bounds=self.arena.half_size,
+                difficulty='medium'
+            )
+            bot.target_entity = self.local_player  # Target the player
+            self.bots.append(bot)
+            print(f"[LOG] Bot {i} spawned at {bot_pos}")
+
         # Create power-up spawner
         self.powerup_spawner = PowerUpSpawner(self.arena.half_size)
         print(f"[LOG] Power-up spawner created with {len(self.powerup_spawner.powerups)} power-ups")
@@ -448,6 +467,24 @@ class Game:
                     self.minimap.update_powerup(
                         pid, powerup.position, powerup.powerup_type, powerup.active
                     )
+
+        # Update bots
+        for bot in self.bots:
+            if bot.is_alive:
+                bot.update(time.dt)
+                # Check if bot wants to shoot
+                shot_data = bot.try_shoot()
+                if shot_data:
+                    self.projectile_manager.spawn(
+                        position=shot_data['position'],
+                        direction=shot_data['direction'],
+                        owner_id=shot_data['owner_id'],
+                        weapon='primary'
+                    )
+
+                # Update bot on minimap
+                if hasattr(self, 'minimap') and self.minimap:
+                    self.minimap.update_other_player(bot.bot_id, bot.position, bot.is_alive)
 
         # Handle respawn
         if not self.local_player.is_alive:
@@ -632,10 +669,15 @@ class Game:
 
     def _check_collisions(self):
         """Check projectile collisions (host only)."""
-        # Check collisions - pass remote players and local player separately
+        # Combine remote players and bots for collision checking
+        all_targets = dict(self.remote_players)
+        for bot in self.bots:
+            all_targets[bot.bot_id] = bot
+
+        # Check collisions - pass all targets and local player separately
         bounds = self.arena.get_bounds() if self.arena else (60, 30, 60)
         hits, obstacle_hits = self.projectile_manager.check_collisions(
-            self.remote_players, self.local_player, bounds
+            all_targets, self.local_player, bounds
         )
 
         # Process obstacle hits (play explosion sound for secondary weapon)
@@ -671,6 +713,14 @@ class Game:
                         pass  # Remote player gets kill notification via broadcast
             elif target_id in self.remote_players:
                 self.remote_players[target_id].take_damage(damage, attacker_id)
+            else:
+                # Check if it's a bot
+                for bot in self.bots:
+                    if bot.bot_id == target_id:
+                        bot.take_damage(damage)
+                        if not bot.is_alive and attacker_id == self.local_player.player_id:
+                            self.local_player.add_kill()
+                        break
 
             # Broadcast hit to all clients
             if self.server:

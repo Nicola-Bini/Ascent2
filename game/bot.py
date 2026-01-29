@@ -20,6 +20,7 @@ class Bot(Entity):
         super().__init__(**kwargs)
 
         self.bot_id = bot_id
+        self.player_id = bot_id  # Alias for collision system compatibility
         self.arena_bounds = arena_bounds
         self.difficulty = difficulty
         self.position = Vec3(position) if not isinstance(position, Vec3) else position

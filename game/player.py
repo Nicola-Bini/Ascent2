@@ -483,8 +483,8 @@ class Player(Entity):
 
     def shoot_primary(self):
         self.last_primary_time = time.time()
-        # Fire from alternating wing weapon pods
-        weapon_offset = self.right * (3.2 * self.primary_side) + self.forward * 2.0
+        # Fire from alternating wing weapon pods, further out
+        weapon_offset = self.right * (3.2 * self.primary_side) + self.forward * 8.0
         spawn_pos = self.position + weapon_offset
         self.primary_side *= -1  # Alternate sides
         return {
