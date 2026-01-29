@@ -307,7 +307,7 @@ class Player(Entity):
             adjusted_y = -mv[0] * sin_roll + mv[1] * cos_roll
             self.rotation_y += adjusted_x * self.mouse_sensitivity
             self.rotation_x -= adjusted_y * self.mouse_sensitivity
-            self.rotation_x = clamp(self.rotation_x, -89, 89)
+            # No clamp - allow full 360 degree pitch for 6DOF flight
 
         keys = self.keys_held
 
