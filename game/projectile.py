@@ -371,10 +371,13 @@ class ProjectileManager:
                 if not player.is_alive:
                     continue
 
-                # Distance-based collision
+                # Distance-based collision using target's collision radius
                 dist = (player.position - proj.position).length()
-                # Laser has 3x bigger hitbox
-                hit_radius = 2.0 if proj.weapon == 'secondary' else 4.5 if proj.weapon == 'primary' else 1.5
+                # Use player's collision_radius if available, otherwise default
+                target_radius = getattr(player, 'collision_radius', 10.0)
+                # Add projectile radius for larger projectiles
+                proj_bonus = 2.0 if proj.weapon == 'secondary' else 1.0
+                hit_radius = target_radius + proj_bonus
 
                 if dist < hit_radius:
                     hits.append({

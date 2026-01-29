@@ -36,6 +36,7 @@ class Bot(Entity):
         self.health = self.max_health
         self.is_alive = True
         self.last_shot_time = 0
+        self.collision_radius = 2.0 * BOT_SCALE  # Hitbox scaled with bot size
 
         # Movement
         self.velocity = Vec3(0, 0, 0)

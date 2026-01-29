@@ -17,7 +17,7 @@ class Player(Entity):
         self.is_local = is_local
         self.arena_bounds = arena_bounds
         self.collidables = collidables if collidables else []
-        self.collision_radius = 2.0  # Player collision radius
+        self.collision_radius = 3.0 * SHIP_SCALE  # Player collision radius scaled with ship size
 
         # Physics settings
         self.velocity = Vec3(0, 0, 0)
