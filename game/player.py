@@ -4,52 +4,38 @@ import random
 
 
 class Player(Entity):
-    """6DOF player ship with physics-based movement."""
+    """6DOF player ship with physics-based movement. StarCraft Wraith-inspired design."""
 
     def __init__(self, player_id=0, is_local=True, arena_bounds=None, **kwargs):
-        # Realistic ship colors - dark metallic with accent lights
-        if is_local:
-            ship_color = color.rgb(60, 65, 75)  # Dark gunmetal
-        else:
-            ship_color = color.rgb(80, 45, 45)  # Dark red-brown for enemies
-
-        super().__init__(
-            model='cube',
-            color=ship_color,
-            scale=(1.5, 0.75, 3) if not is_local else (1, 0.5, 2),
-            collider='box',
-            **kwargs
-        )
+        super().__init__(**kwargs)
 
         self.player_id = player_id
         self.is_local = is_local
         self.arena_bounds = arena_bounds
 
         # Physics settings
-        self.velocity = Vec3(0, 0, 0)  # Current velocity vector
-        self.max_speed = 50  # Maximum speed
-        self.acceleration = 45  # Acceleration rate (increased)
-        self.deceleration = 5  # Lower drag for more drift
-        self.strafe_multiplier = 0.9  # Strafe nearly as fast
-        self.vertical_multiplier = 0.85  # Vertical nearly as fast
+        self.velocity = Vec3(0, 0, 0)
+        self.max_speed = 50
+        self.acceleration = 45
+        self.deceleration = 5
+        self.strafe_multiplier = 0.9
+        self.vertical_multiplier = 0.85
 
         # Rotation settings
-        self.roll_speed = 120  # degrees per second
+        self.roll_speed = 120
         self.mouse_sensitivity = 40
-        self.rotation_velocity = Vec3(0, 0, 0)  # For smooth rotation
 
         # Combat - Primary weapon (rapid fire)
         self.max_health = 100
         self.health = self.max_health
         self.is_alive = True
         self.respawn_time = 3.0
-        self.primary_cooldown = 0.12  # Fast fire rate
+        self.primary_cooldown = 0.12
         self.last_primary_time = 0
 
         # Combat - Secondary weapon (slow powerful shot)
-        self.secondary_cooldown = 1.5  # Slow fire rate
+        self.secondary_cooldown = 1.5
         self.last_secondary_time = 0
-        self.secondary_damage = 50  # High damage
 
         # Stats
         self.kills = 0
@@ -65,12 +51,12 @@ class Player(Entity):
 
         # For network interpolation
         self.target_position = self.position
-        self.target_rotation = self.rotation
+        self.target_rotation = Vec3(0, 0, 0)
         self.target_velocity = Vec3(0, 0, 0)
         self.interpolation_speed = 15
 
-        # Create ship visual details
-        self._create_ship_details()
+        # Create StarCraft-inspired ship model
+        self._create_ship_model()
 
         if is_local:
             mouse.locked = True
@@ -79,52 +65,151 @@ class Player(Entity):
             camera.position = self.position
             camera.rotation = (0, 0, 0)
             camera.fov = 100
+            self._hide_local_ship()
 
-            # Hide local player model
-            self.visible = False
-            self.cockpit.visible = False
-            self.left_wing.visible = False
-            self.right_wing.visible = False
-            self.engine_glow.visible = False
+    def _create_ship_model(self):
+        """Create a StarCraft Wraith-inspired ship model."""
+        # Color scheme
+        if self.is_local:
+            main_color = color.rgb(70, 85, 100)  # Blue-gray (Terran)
+            accent_color = color.rgb(50, 120, 180)  # Blue accent
+            engine_color = color.rgb(80, 150, 255)  # Blue engine glow
+        else:
+            main_color = color.rgb(120, 60, 60)  # Red-brown (enemy)
+            accent_color = color.rgb(180, 80, 50)  # Orange accent
+            engine_color = color.rgb(255, 120, 50)  # Orange engine glow
 
-    def _create_ship_details(self):
-        """Add visual details with realistic colors."""
-        # Cockpit - dim cyan glow for local, orange for enemies
-        cockpit_color = color.rgb(40, 80, 90) if self.is_local else color.rgb(120, 70, 30)
+        # Main fuselage - elongated body
+        self.fuselage = Entity(
+            parent=self,
+            model='cube',
+            color=main_color,
+            scale=(1.2, 0.6, 3.5),
+            position=(0, 0, 0),
+        )
+
+        # Cockpit - angled front section
         self.cockpit = Entity(
             parent=self,
             model='cube',
-            color=cockpit_color,
-            scale=(0.5, 0.4, 0.6),
-            position=(0, 0.4, 0.6),
+            color=color.rgb(40, 60, 80) if self.is_local else color.rgb(80, 50, 40),
+            scale=(0.8, 0.5, 1.2),
+            position=(0, 0.2, 1.8),
+            rotation=(15, 0, 0),
         )
 
-        # Wings - darker metallic
-        wing_color = color.rgb(50, 55, 65) if self.is_local else color.rgb(70, 40, 40)
+        # Cockpit glass
+        self.cockpit_glass = Entity(
+            parent=self,
+            model='cube',
+            color=color.rgb(100, 180, 220) if self.is_local else color.rgb(200, 150, 100),
+            scale=(0.5, 0.3, 0.6),
+            position=(0, 0.35, 2.0),
+            rotation=(20, 0, 0),
+        )
+
+        # Left wing - swept back
         self.left_wing = Entity(
             parent=self,
             model='cube',
-            color=wing_color,
-            scale=(2, 0.15, 1),
-            position=(-1, 0, -0.3),
+            color=main_color,
+            scale=(3, 0.15, 1.8),
+            position=(-1.8, 0, -0.5),
+            rotation=(0, 0, -8),
         )
+
+        # Right wing - swept back
         self.right_wing = Entity(
             parent=self,
             model='cube',
-            color=wing_color,
-            scale=(2, 0.15, 1),
-            position=(1, 0, -0.3),
+            color=main_color,
+            scale=(3, 0.15, 1.8),
+            position=(1.8, 0, -0.5),
+            rotation=(0, 0, 8),
         )
 
-        # Engine glow
-        engine_color = color.rgb(100, 150, 255) if self.is_local else color.rgb(255, 100, 50)
-        self.engine_glow = Entity(
+        # Left wing tip / weapon pod
+        self.left_weapon = Entity(
+            parent=self,
+            model='cube',
+            color=accent_color,
+            scale=(0.5, 0.4, 1.5),
+            position=(-3.2, 0.1, -0.3),
+        )
+
+        # Right wing tip / weapon pod
+        self.right_weapon = Entity(
+            parent=self,
+            model='cube',
+            color=accent_color,
+            scale=(0.5, 0.4, 1.5),
+            position=(3.2, 0.1, -0.3),
+        )
+
+        # Tail fin - vertical stabilizer
+        self.tail_fin = Entity(
+            parent=self,
+            model='cube',
+            color=main_color,
+            scale=(0.15, 1.2, 1.0),
+            position=(0, 0.6, -1.5),
+        )
+
+        # Left engine nacelle
+        self.left_engine = Entity(
+            parent=self,
+            model='cube',
+            color=color.rgb(50, 55, 65),
+            scale=(0.6, 0.5, 1.8),
+            position=(-1.0, -0.2, -1.2),
+        )
+
+        # Right engine nacelle
+        self.right_engine = Entity(
+            parent=self,
+            model='cube',
+            color=color.rgb(50, 55, 65),
+            scale=(0.6, 0.5, 1.8),
+            position=(1.0, -0.2, -1.2),
+        )
+
+        # Left engine glow
+        self.left_glow = Entity(
             parent=self,
             model='cube',
             color=engine_color,
-            scale=(0.4, 0.3, 0.2),
-            position=(0, 0, -1.2),
+            scale=(0.4, 0.35, 0.2),
+            position=(-1.0, -0.2, -2.1),
         )
+
+        # Right engine glow
+        self.right_glow = Entity(
+            parent=self,
+            model='cube',
+            color=engine_color,
+            scale=(0.4, 0.35, 0.2),
+            position=(1.0, -0.2, -2.1),
+        )
+
+        # Store all parts for visibility toggling
+        self.ship_parts = [
+            self.fuselage, self.cockpit, self.cockpit_glass,
+            self.left_wing, self.right_wing,
+            self.left_weapon, self.right_weapon,
+            self.tail_fin,
+            self.left_engine, self.right_engine,
+            self.left_glow, self.right_glow
+        ]
+
+    def _hide_local_ship(self):
+        """Hide ship model for first-person view."""
+        for part in self.ship_parts:
+            part.visible = False
+
+    def _show_ship(self):
+        """Show ship model (for remote players or respawn)."""
+        for part in self.ship_parts:
+            part.visible = True
 
     def input(self, key):
         """Handle key press/release events."""
@@ -146,17 +231,14 @@ class Player(Entity):
             'right mouse up': 'right mouse',
         }
 
-        # Handle mouse button releases
         if key in release_map:
             self.keys_held[release_map[key]] = False
             return
 
-        # Handle mouse button presses
         if key in key_map:
             self.keys_held[key_map[key]] = True
             return
 
-        # Handle keyboard releases
         if key.endswith(' up'):
             base_key = key[:-3]
             if base_key in key_map:
@@ -178,7 +260,6 @@ class Player(Entity):
         """Process input with physics-based movement."""
         dt = time.dt
 
-        # Mouse look (pitch and yaw)
         if mouse.locked:
             mv = mouse.velocity
             self.rotation_y += mv[0] * self.mouse_sensitivity
@@ -187,22 +268,18 @@ class Player(Entity):
 
         keys = self.keys_held
 
-        # Roll (Q/E)
         roll_input = (1 if keys['e'] else 0) - (1 if keys['q'] else 0)
         self.rotation_z += roll_input * self.roll_speed * dt
 
-        # Calculate input direction
         forward_input = (1 if keys['w'] else 0) - (1 if keys['s'] else 0)
         strafe_input = (1 if keys['d'] else 0) - (1 if keys['a'] else 0)
         vertical_input = (1 if keys['space'] else 0) - (1 if (keys['shift'] or keys['control']) else 0)
 
-        # Use entity's built-in direction vectors - these properly account for all rotations
-        # including roll, giving true Descent-style 6DOF movement
-        ship_forward = self.forward  # Direction ship is facing
-        ship_right = self.right      # Ship's right side
-        ship_up = self.up            # Ship's top
+        # Use entity's built-in direction vectors for proper 6DOF
+        ship_forward = self.forward
+        ship_right = self.right
+        ship_up = self.up
 
-        # Calculate desired acceleration in ship's local space
         accel = Vec3(0, 0, 0)
         if forward_input != 0:
             accel += ship_forward * forward_input * self.acceleration
@@ -211,22 +288,18 @@ class Player(Entity):
         if vertical_input != 0:
             accel += ship_up * vertical_input * self.acceleration * self.vertical_multiplier
 
-        # Apply acceleration to velocity
         if accel.length() > 0:
             self.velocity += accel * dt
         else:
-            # Apply drag when no input
             drag = self.deceleration * dt
             if self.velocity.length() > drag:
                 self.velocity -= self.velocity.normalized() * drag
             else:
                 self.velocity = Vec3(0, 0, 0)
 
-        # Clamp to max speed
         if self.velocity.length() > self.max_speed:
             self.velocity = self.velocity.normalized() * self.max_speed
 
-        # Apply velocity to position
         self.position += self.velocity * dt
 
         # Bounce off arena bounds
@@ -236,7 +309,7 @@ class Player(Entity):
 
             if abs(self.x) > hx - margin:
                 self.x = clamp(self.x, -hx + margin, hx - margin)
-                self.velocity.x *= -0.5  # Bounce with energy loss
+                self.velocity.x *= -0.5
 
             if abs(self.y) > hy - margin:
                 self.y = clamp(self.y, -hy + margin, hy - margin)
@@ -246,7 +319,6 @@ class Player(Entity):
                 self.z = clamp(self.z, -hz + margin, hz - margin)
                 self.velocity.z *= -0.5
 
-        # Update camera
         camera.position = self.position
         camera.rotation_x = self.rotation_x
         camera.rotation_y = self.rotation_y
@@ -255,22 +327,19 @@ class Player(Entity):
     def _interpolate_to_target(self):
         """Smoothly interpolate to target state for remote players."""
         dt = time.dt
+        lerp_factor = min(1.0, self.interpolation_speed * dt)
 
         # Position interpolation with velocity prediction
-        self.position = lerp(self.position, self.target_position,
-                            self.interpolation_speed * dt)
+        predicted_pos = self.target_position + self.target_velocity * dt * 2
+        self.position = lerp(self.position, predicted_pos, lerp_factor)
 
         # Velocity interpolation
-        self.velocity = lerp(self.velocity, self.target_velocity,
-                            self.interpolation_speed * dt)
+        self.velocity = lerp(self.velocity, self.target_velocity, lerp_factor)
 
         # Rotation interpolation
-        self.rotation_x = lerp(self.rotation_x, self.target_rotation[0],
-                              self.interpolation_speed * dt)
-        self.rotation_y = lerp(self.rotation_y, self.target_rotation[1],
-                              self.interpolation_speed * dt)
-        self.rotation_z = lerp(self.rotation_z, self.target_rotation[2],
-                              self.interpolation_speed * dt)
+        self.rotation_x = lerp(self.rotation_x, self.target_rotation[0], lerp_factor)
+        self.rotation_y = lerp(self.rotation_y, self.target_rotation[1], lerp_factor)
+        self.rotation_z = lerp(self.rotation_z, self.target_rotation[2], lerp_factor)
 
     def set_network_state(self, position, rotation, velocity=None):
         """Set target state for network interpolation."""
@@ -291,15 +360,12 @@ class Player(Entity):
         }
 
     def can_shoot_primary(self):
-        """Check if player can fire primary weapon."""
         return self.is_alive and (time.time() - self.last_primary_time) >= self.primary_cooldown
 
     def can_shoot_secondary(self):
-        """Check if player can fire secondary weapon."""
         return self.is_alive and (time.time() - self.last_secondary_time) >= self.secondary_cooldown
 
     def shoot_primary(self):
-        """Fire primary weapon (rapid fire)."""
         self.last_primary_time = time.time()
         return {
             'position': (self.position.x, self.position.y, self.position.z),
@@ -309,7 +375,6 @@ class Player(Entity):
         }
 
     def shoot_secondary(self):
-        """Fire secondary weapon (slow, powerful)."""
         self.last_secondary_time = time.time()
         return {
             'position': (self.position.x, self.position.y, self.position.z),
@@ -319,12 +384,17 @@ class Player(Entity):
         }
 
     def take_damage(self, amount, attacker_id=None):
-        """Apply damage to player."""
         if not self.is_alive:
             return False
 
         self.health -= amount
-        self.blink(color.red, duration=0.1)
+
+        # Flash red on hit
+        for part in self.ship_parts:
+            if part.visible:
+                original_color = part.color
+                part.color = color.red
+                invoke(setattr, part, 'color', original_color, delay=0.1)
 
         if self.health <= 0:
             self.die(attacker_id)
@@ -332,32 +402,32 @@ class Player(Entity):
         return False
 
     def die(self, killer_id=None):
-        """Handle player death."""
         self.is_alive = False
         self.deaths += 1
-        self.visible = False
         self.velocity = Vec3(0, 0, 0)
+
+        for part in self.ship_parts:
+            part.visible = False
 
         if self.is_local:
             mouse.locked = False
             mouse.visible = True
 
     def respawn(self, position=None):
-        """Respawn the player."""
         self.health = self.max_health
         self.is_alive = True
         self.velocity = Vec3(0, 0, 0)
 
         if not self.is_local:
-            self.visible = True
+            self._show_ship()
 
         if position:
             self.position = Vec3(position[0], position[1], position[2])
         else:
             self.position = Vec3(
-                random.uniform(-20, 20),
-                random.uniform(-10, 10),
-                random.uniform(-20, 20)
+                random.uniform(-30, 30),
+                random.uniform(-15, 15),
+                random.uniform(-30, 30)
             )
 
         self.rotation = Vec3(0, 0, 0)
@@ -367,9 +437,7 @@ class Player(Entity):
             mouse.visible = False
 
     def add_kill(self):
-        """Increment kill count."""
         self.kills += 1
 
     def get_speed(self):
-        """Get current speed for HUD display."""
         return self.velocity.length()
