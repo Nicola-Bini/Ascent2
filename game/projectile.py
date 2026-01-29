@@ -42,6 +42,8 @@ class Projectile(Entity):
         self.active = True
         self.collidables = collidables if collidables else []
         self.proj_radius = proj_scale * 0.5
+        self.hit_obstacle = False
+        self.hit_position = None
 
         # Visual trail effect
         if weapon == 'secondary':
@@ -65,9 +67,10 @@ class Projectile(Entity):
 
         self.position += self.direction * self.speed * time.dt
 
-        # Check collision with obstacles
+        # Check collision with obstacles - set flag but don't despawn (let manager handle it)
         if self._check_obstacle_collision():
-            self.despawn(hit_obstacle=True)
+            self.hit_obstacle = True
+            self.hit_position = Vec3(self.position)
             return
 
         if time.time() - self.spawn_time > self.lifetime:
@@ -260,8 +263,14 @@ class ProjectileManager:
             del self.projectiles[projectile_id]
 
     def check_collisions(self, players, local_player, arena_bounds):
-        """Check projectile collisions with players and arena."""
+        """Check projectile collisions with players and arena.
+
+        Returns tuple: (player_hits, obstacle_hits)
+        - player_hits: list of dicts with projectile_id, target_id, attacker_id, damage, weapon
+        - obstacle_hits: list of dicts with position, weapon (for sound/effects)
+        """
         hits = []
+        obstacle_hits = []
         to_remove = []
 
         # Combine local player with remote players for collision checking
@@ -272,6 +281,19 @@ class ProjectileManager:
         for proj_id, proj in list(self.projectiles.items()):
             if not proj.active:
                 to_remove.append(proj_id)
+                continue
+
+            # Check if projectile hit an obstacle (set by projectile's update)
+            if proj.hit_obstacle:
+                obstacle_hits.append({
+                    'position': proj.hit_position,
+                    'weapon': proj.weapon
+                })
+                to_remove.append(proj_id)
+
+                # Create explosion for secondary weapon hitting obstacles
+                if proj.weapon == 'secondary':
+                    self.create_explosion(proj.hit_position, size=6.0)  # Bigger explosion
                 continue
 
             # Check arena bounds
@@ -285,7 +307,11 @@ class ProjectileManager:
 
                 # Create explosion for secondary weapon hitting walls
                 if proj.weapon == 'secondary':
-                    self.create_explosion(pos, size=4.0)
+                    self.create_explosion(pos, size=6.0)  # Bigger explosion
+                    obstacle_hits.append({
+                        'position': Vec3(pos),
+                        'weapon': proj.weapon
+                    })
                 continue
 
             # Check player collisions
@@ -305,13 +331,14 @@ class ProjectileManager:
                         'target_id': player.player_id,
                         'attacker_id': proj.owner_id,
                         'damage': proj.damage,
-                        'weapon': proj.weapon
+                        'weapon': proj.weapon,
+                        'position': Vec3(proj.position)
                     })
                     to_remove.append(proj_id)
 
                     # Create explosion for secondary weapon
                     if proj.weapon == 'secondary':
-                        self.create_explosion(proj.position, size=5.0)
+                        self.create_explosion(proj.position, size=7.0)  # Bigger explosion
                     break
 
         # Clean up
@@ -321,7 +348,7 @@ class ProjectileManager:
         # Clean up finished explosions
         self.explosions = [e for e in self.explosions if e.active]
 
-        return hits
+        return hits, obstacle_hits
 
     def clear(self):
         """Remove all projectiles and explosions."""

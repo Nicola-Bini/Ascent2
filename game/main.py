@@ -634,11 +634,17 @@ class Game:
         """Check projectile collisions (host only)."""
         # Check collisions - pass remote players and local player separately
         bounds = self.arena.get_bounds() if self.arena else (60, 30, 60)
-        hits = self.projectile_manager.check_collisions(
+        hits, obstacle_hits = self.projectile_manager.check_collisions(
             self.remote_players, self.local_player, bounds
         )
 
-        # Process hits
+        # Process obstacle hits (play explosion sound for secondary weapon)
+        for obs_hit in obstacle_hits:
+            if obs_hit['weapon'] == 'secondary':
+                self.play_sfx('explosion')
+                self.particle_manager.create_explosion(obs_hit['position'], 'large')
+
+        # Process player hits
         for hit in hits:
             target_id = hit["target_id"]
             attacker_id = hit["attacker_id"]
