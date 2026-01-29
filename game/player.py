@@ -21,7 +21,7 @@ class Player(Entity):
 
         # Physics settings
         self.velocity = Vec3(0, 0, 0)
-        self.max_speed = 200
+        self.max_speed = 200  # Normal max speed (800 when boosting)
         self.acceleration = 180
         self.deceleration = 5
         self.strafe_multiplier = 0.9
@@ -348,19 +348,31 @@ class Player(Entity):
         ship_right = self.right
         ship_up = self.up
 
-        # Handle boost (shift key) - redirect velocity to current facing direction
-        was_boosting = self.boost_active
+        # Handle boost (shift key) - redirect velocity to facing direction with higher max speed
         self.boost_active = keys['shift']
-        if self.boost_active and not was_boosting:
-            # On first press: take current speed and redirect to facing direction
-            current_speed = self.velocity.length()
-            # Keep most of the speed, just redirect it
-            redirect_speed = max(current_speed * 0.8, self.max_speed * 0.5)
-            self.velocity = ship_forward * redirect_speed
 
-        # Calculate effective acceleration and max speed
+        # Boost max speed values
+        boost_max_speed = 800
+        normal_max_speed = 200
+
+        if self.boost_active:
+            # While holding shift: redirect velocity to facing direction
+            current_speed = self.velocity.length()
+            # Maintain current speed in the new direction
+            self.velocity = ship_forward * current_speed
+            current_max_speed = boost_max_speed
+        else:
+            # When not boosting, gradually slow down if above normal max speed
+            current_speed = self.velocity.length()
+            if current_speed > normal_max_speed:
+                # Slow down gradually (lose 100 units/sec)
+                new_speed = max(current_speed - 100 * dt, normal_max_speed)
+                if current_speed > 0.1:
+                    self.velocity = self.velocity.normalized() * new_speed
+            current_max_speed = normal_max_speed
+
+        # Calculate effective acceleration
         current_accel = self.acceleration
-        current_max_speed = self.max_speed
 
         accel = Vec3(0, 0, 0)
         if forward_input != 0:
