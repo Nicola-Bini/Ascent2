@@ -22,9 +22,9 @@ class Projectile(Entity):
         else:
             # Primary laser - long thick beam
             proj_color = Color(100/255, 255/255, 150/255, 1)  # Bright green laser
-            proj_scale = (0.15, 0.15, 1.2)  # Thick and long
+            proj_scale = (0.35, 0.35, 3.0)  # Even thicker and longer
             proj_model = 'cube'
-            trail_scale = (0.1, 0.1, 0.8)
+            trail_scale = (0.25, 0.25, 1.5)
 
         super().__init__(
             model=proj_model,
@@ -211,9 +211,9 @@ class ProjectileManager:
             damage = 8  # Less damage per projectile (but 3 projectiles)
             lifetime = 2.0  # Medium range
         else:
-            speed = 210  # Fast laser (was 70)
+            speed = 350  # Very fast laser
             damage = 12  # Less damage
-            lifetime = 2.5
+            lifetime = 2.0
 
         proj = Projectile(
             position=position,
