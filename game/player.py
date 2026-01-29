@@ -343,22 +343,23 @@ class Player(Entity):
         strafe_input = (1 if keys['d'] else 0) - (1 if keys['a'] else 0)
         vertical_input = (1 if keys['space'] else 0) - (1 if keys['control'] else 0)
 
-        # Handle boost (shift key) - always active while held, cancels inertia
-        was_boosting = self.boost_active
-        self.boost_active = keys['shift']
-
-        # Cancel all inertia when boost is first activated
-        if self.boost_active and not was_boosting:
-            self.velocity = Vec3(0, 0, 0)
-
-        # Calculate effective acceleration and max speed
-        current_accel = self.acceleration * (self.boost_multiplier if self.boost_active else 1)
-        current_max_speed = self.max_speed * (self.boost_multiplier if self.boost_active else 1)
-
         # Use entity's built-in direction vectors for proper 6DOF
         ship_forward = self.forward
         ship_right = self.right
         ship_up = self.up
+
+        # Handle boost (shift key) - redirect velocity to current facing direction at reduced speed
+        self.boost_active = keys['shift']
+        if self.boost_active:
+            # Get current speed, reduce it, and redirect to facing direction
+            current_speed = self.velocity.length()
+            # Reduce speed significantly and redirect to where we're looking
+            redirect_speed = min(current_speed * 0.5, self.max_speed * 0.3)
+            self.velocity = ship_forward * redirect_speed
+
+        # Calculate effective acceleration and max speed
+        current_accel = self.acceleration
+        current_max_speed = self.max_speed
 
         accel = Vec3(0, 0, 0)
         if forward_input != 0:
