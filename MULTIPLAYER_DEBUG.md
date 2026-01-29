@@ -249,3 +249,47 @@ if __name__ == "__main__":
 ```
 
 This ensures Ursina finds and calls the update/input functions properly.
+
+---
+
+## Gameplay Improvements (Commit 1d7ecbd)
+
+### Physics System
+- **Momentum**: Ships preserve velocity - releasing keys doesn't stop instantly
+- **Acceleration**: `acceleration = 25`, builds up speed over time
+- **Deceleration**: `deceleration = 8`, natural drag when no input
+- **Max Speed**: `max_speed = 40`
+- **Bouncing**: Ships bounce off walls with 50% energy loss
+
+### True 6DOF Movement
+All movement is relative to ship orientation:
+- W/S: Forward/backward along ship's facing direction
+- A/D: Strafe left/right
+- Space/Shift: Move up/down relative to ship's up vector
+- Q/E: Roll
+- Mouse: Pitch and yaw
+
+### Weapons
+| Weapon | Button | Cooldown | Damage | Speed | Notes |
+|--------|--------|----------|--------|-------|-------|
+| Primary | Left Click (hold) | 0.12s | 12 | 70 | Rapid fire |
+| Secondary | Right Click (hold) | 1.5s | 50 | 40 | Explosion on hit |
+
+### Arena
+- Size: 120x60x120 (was 50x30x50)
+- Industrial aesthetic with dark metallic colors
+- Grid lines on floor for spatial awareness
+- Multiple platforms and obstacles for cover
+
+### Controls Summary
+```
+W/S     - Forward/Back (accelerates)
+A/D     - Strafe Left/Right
+Space   - Move Up
+Shift   - Move Down
+Q/E     - Roll Left/Right
+Mouse   - Look (Pitch/Yaw)
+LMB     - Primary Fire (hold for continuous)
+RMB     - Secondary Fire (hold for continuous)
+ESC     - Return to menu
+```

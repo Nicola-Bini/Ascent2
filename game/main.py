@@ -274,12 +274,6 @@ class Game:
         if not self.local_player:
             return
 
-        # Debug: confirm update is running
-        if not hasattr(self, '_update_counter'):
-            self._update_counter = 0
-            print("[MAIN-DEBUG] First update() call")
-        self._update_counter += 1
-
         # Handle continuous fire when mouse buttons are held
         if self.local_player.is_alive:
             if self.local_player.keys_held.get('left mouse', False):
@@ -336,16 +330,6 @@ class Game:
             messages = self.server.get_messages()
         elif self.client:
             messages = self.client.get_messages()
-
-        # Debug: log queue status periodically
-        if not hasattr(self, '_net_debug_counter'):
-            self._net_debug_counter = 0
-        self._net_debug_counter += 1
-        if self._net_debug_counter % 60 == 1:  # Log every ~1 second at 60fps
-            if self.is_host and self.server:
-                print(f"[MAIN-DEBUG] Host: server.message_queue has {len(self.server.message_queue)} items")
-            elif self.client:
-                print(f"[MAIN-DEBUG] Client: client.message_queue has {len(self.client.message_queue)} items")
 
         if messages:
             print(f"[MAIN] Processing {len(messages)} messages (is_host={self.is_host})")

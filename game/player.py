@@ -1,6 +1,5 @@
 """Player ship class with 6DOF controls and momentum-based physics."""
 from ursina import *
-import math
 import random
 
 
@@ -28,11 +27,11 @@ class Player(Entity):
 
         # Physics settings
         self.velocity = Vec3(0, 0, 0)  # Current velocity vector
-        self.max_speed = 40  # Maximum speed
-        self.acceleration = 25  # Acceleration rate
-        self.deceleration = 8  # Natural drag/friction
-        self.strafe_multiplier = 0.8  # Strafe is slightly slower
-        self.vertical_multiplier = 0.7  # Vertical is slower
+        self.max_speed = 50  # Maximum speed
+        self.acceleration = 45  # Acceleration rate (increased)
+        self.deceleration = 5  # Lower drag for more drift
+        self.strafe_multiplier = 0.9  # Strafe nearly as fast
+        self.vertical_multiplier = 0.85  # Vertical nearly as fast
 
         # Rotation settings
         self.roll_speed = 120  # degrees per second
@@ -197,41 +196,20 @@ class Player(Entity):
         strafe_input = (1 if keys['d'] else 0) - (1 if keys['a'] else 0)
         vertical_input = (1 if keys['space'] else 0) - (1 if (keys['shift'] or keys['control']) else 0)
 
-        # Get ship's local axes based on current rotation
-        # Convert rotation to radians
-        pitch = math.radians(self.rotation_x)
-        yaw = math.radians(self.rotation_y)
-        roll = math.radians(self.rotation_z)
+        # Use entity's built-in direction vectors - these properly account for all rotations
+        # including roll, giving true Descent-style 6DOF movement
+        ship_forward = self.forward  # Direction ship is facing
+        ship_right = self.right      # Ship's right side
+        ship_up = self.up            # Ship's top
 
-        # Calculate forward vector (accounts for pitch and yaw)
-        forward = Vec3(
-            math.sin(yaw) * math.cos(pitch),
-            -math.sin(pitch),
-            math.cos(yaw) * math.cos(pitch)
-        )
-
-        # Calculate right vector (accounts for yaw and roll)
-        right = Vec3(
-            math.cos(yaw) * math.cos(roll) + math.sin(yaw) * math.sin(pitch) * math.sin(roll),
-            math.cos(pitch) * math.sin(roll),
-            -math.sin(yaw) * math.cos(roll) + math.cos(yaw) * math.sin(pitch) * math.sin(roll)
-        )
-
-        # Calculate up vector (cross product of forward and right, simplified)
-        up = Vec3(
-            math.sin(yaw) * math.sin(pitch) * math.cos(roll) - math.cos(yaw) * math.sin(roll),
-            math.cos(pitch) * math.cos(roll),
-            math.cos(yaw) * math.sin(pitch) * math.cos(roll) + math.sin(yaw) * math.sin(roll)
-        )
-
-        # Calculate desired acceleration
+        # Calculate desired acceleration in ship's local space
         accel = Vec3(0, 0, 0)
         if forward_input != 0:
-            accel += forward * forward_input * self.acceleration
+            accel += ship_forward * forward_input * self.acceleration
         if strafe_input != 0:
-            accel += right * strafe_input * self.acceleration * self.strafe_multiplier
+            accel += ship_right * strafe_input * self.acceleration * self.strafe_multiplier
         if vertical_input != 0:
-            accel += up * vertical_input * self.acceleration * self.vertical_multiplier
+            accel += ship_up * vertical_input * self.acceleration * self.vertical_multiplier
 
         # Apply acceleration to velocity
         if accel.length() > 0:
