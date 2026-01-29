@@ -122,7 +122,7 @@ class Game:
         """Setup scene lighting."""
         # Set dark background
         window.color = Color(10/255, 12/255, 18/255, 1)
-        camera.clip_plane_far = 500
+        camera.clip_plane_far = 10000
         camera.clip_plane_near = 0.1
 
         # Create a dark sky sphere

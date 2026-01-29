@@ -100,7 +100,7 @@ class Player(Entity):
             camera.rotation_z = 0
             camera.fov = 90
             camera.clip_plane_near = 0.1
-            camera.clip_plane_far = 500
+            camera.clip_plane_far = 10000
             self._hide_local_ship()
 
     def _create_ship_model(self):
