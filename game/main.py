@@ -677,7 +677,10 @@ class Game:
                 self.server.broadcast_hit(target_id, attacker_id, damage)
 
                 # Give kill credit if target died
-                target = all_players.get(target_id)
+                if target_id == self.local_player.player_id:
+                    target = self.local_player
+                else:
+                    target = self.remote_players.get(target_id)
                 if target and not target.is_alive:
                     if attacker_id == self.local_player.player_id:
                         self.local_player.add_kill()
