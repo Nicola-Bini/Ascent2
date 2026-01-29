@@ -298,10 +298,15 @@ class Player(Entity):
 
         if mouse.locked:
             mv = mouse.velocity
-            # Direct mouse input - no roll compensation needed for 6DOF
-            # Mouse X controls yaw, Mouse Y controls pitch
-            self.rotation_y += mv[0] * self.mouse_sensitivity
-            self.rotation_x -= mv[1] * self.mouse_sensitivity
+            # Transform mouse input based on roll angle for intuitive controls
+            roll_rad = math.radians(self.rotation_z)
+            cos_roll = math.cos(roll_rad)
+            sin_roll = math.sin(roll_rad)
+            # Rotate the mouse delta by the inverse of the roll
+            adjusted_x = mv[0] * cos_roll + mv[1] * sin_roll
+            adjusted_y = -mv[0] * sin_roll + mv[1] * cos_roll
+            self.rotation_y += adjusted_x * self.mouse_sensitivity
+            self.rotation_x -= adjusted_y * self.mouse_sensitivity
             # No clamp - allow full 360 degree pitch for 6DOF flight
 
         keys = self.keys_held
