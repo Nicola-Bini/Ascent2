@@ -323,13 +323,47 @@ class Player(Entity):
 
     def _get_orientation_vectors(self):
         """Get forward, right, up vectors from quaternion orientation."""
-        # Extract rotation matrix from quaternion
-        mat = self.orientation
-        # Forward is -Z in Panda3D/Ursina convention
-        fwd = mat.xform(PandaVec3(0, 0, 1))
-        right = mat.xform(PandaVec3(1, 0, 0))
-        up = mat.xform(PandaVec3(0, 1, 0))
-        return Vec3(fwd.x, fwd.y, fwd.z), Vec3(right.x, right.y, right.z), Vec3(up.x, up.y, up.z)
+        # Get HPR from quaternion (Panda3D convention)
+        hpr = self.orientation.getHpr()
+        # H = heading (yaw), P = pitch, R = roll
+        # Convert to Ursina's rotation convention
+        yaw = math.radians(-hpr.x)  # Heading -> rotation_y
+        pitch = math.radians(-hpr.y)  # Pitch -> rotation_x
+        roll = math.radians(hpr.z)  # Roll -> rotation_z
+
+        # Calculate forward vector (standard FPS math)
+        cos_pitch = math.cos(pitch)
+        sin_pitch = math.sin(pitch)
+        cos_yaw = math.cos(yaw)
+        sin_yaw = math.sin(yaw)
+
+        fwd = Vec3(
+            cos_pitch * sin_yaw,
+            -sin_pitch,
+            cos_pitch * cos_yaw
+        )
+
+        # Calculate right vector
+        right = Vec3(
+            math.cos(yaw),
+            0,
+            -math.sin(yaw)
+        )
+
+        # Apply roll to right vector
+        cos_roll = math.cos(roll)
+        sin_roll = math.sin(roll)
+        up_base = fwd.cross(right).normalized()
+        right = Vec3(
+            right.x * cos_roll + up_base.x * sin_roll,
+            right.y * cos_roll + up_base.y * sin_roll,
+            right.z * cos_roll + up_base.z * sin_roll
+        )
+
+        # Calculate up vector
+        up = fwd.cross(right).normalized() * -1
+
+        return fwd, right, up
 
     def _handle_local_input(self):
         """Process input with physics-based movement using quaternion rotation."""
