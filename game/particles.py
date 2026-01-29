@@ -13,7 +13,6 @@ class Particle(Entity):
             scale=size,
             color=color_start,
             billboard=True,  # Always face camera
-            unlit=True,
             **kwargs
         )
         self.velocity = Vec3(velocity) if not isinstance(velocity, Vec3) else velocity
@@ -201,7 +200,6 @@ class MuzzleFlash(Entity):
             scale=flash_size,
             color=flash_color,
             billboard=True,
-            unlit=True,
         )
 
         self.lifetime = 0.05  # Very short flash

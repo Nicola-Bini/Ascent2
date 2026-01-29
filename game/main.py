@@ -121,7 +121,7 @@ class Game:
     def _setup_lighting(self):
         """Setup scene lighting."""
         # Set dark background
-        window.color = color.rgb(10, 12, 18)
+        window.color = Color(10/255, 12/255, 18/255, 1)
         camera.clip_plane_far = 500
         camera.clip_plane_near = 0.1
 
@@ -129,12 +129,12 @@ class Game:
         self.sky = Entity(
             model='sphere',
             scale=600,
-            color=color.rgb(12, 14, 20),
+            color=Color(12/255, 14/255, 20/255, 1),
             double_sided=True,
         )
 
-        # Dim ambient light - lower values = darker, more atmospheric
-        AmbientLight(color=color.rgb(60, 60, 70))
+        # Ambient light with normalized color values
+        AmbientLight(color=Color(1, 1, 1, 1))
 
         print("[LOG] Lighting setup complete")
 

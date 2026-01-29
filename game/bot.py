@@ -81,7 +81,6 @@ class Bot(Entity):
             model='cube',
             color=color.rgb(150, 50, 50),
             scale=(1.2, 0.4, 2),
-            unlit=True,
         )
 
         # Wings
@@ -91,7 +90,6 @@ class Bot(Entity):
             color=color.rgb(120, 40, 40),
             scale=(2, 0.1, 1),
             position=(-1.2, 0, 0),
-            unlit=True,
         )
         self.right_wing = Entity(
             parent=self,
@@ -99,7 +97,6 @@ class Bot(Entity):
             color=color.rgb(120, 40, 40),
             scale=(2, 0.1, 1),
             position=(1.2, 0, 0),
-            unlit=True,
         )
 
         # Cockpit
@@ -109,7 +106,6 @@ class Bot(Entity):
             color=color.rgb(80, 30, 30),
             scale=(0.6, 0.3, 0.8),
             position=(0, 0.2, 0.5),
-            unlit=True,
         )
 
         # Engine glow
@@ -119,7 +115,6 @@ class Bot(Entity):
             color=color.rgb(255, 100, 50),
             scale=(0.4, 0.2, 0.3),
             position=(0, 0, -1.2),
-            unlit=True,
         )
 
         self.parts = [self.body, self.left_wing, self.right_wing, self.cockpit, self.engine]

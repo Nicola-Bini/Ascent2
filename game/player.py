@@ -561,7 +561,6 @@ class Player(Entity):
             scale=random.uniform(0.2, 0.4),
             color=color.rgb(100, 150, 255),  # Blue-white
             billboard=True,
-            unlit=True,
         )
 
         # Store particle data

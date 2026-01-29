@@ -47,7 +47,6 @@ class PowerUp(Entity):
             scale=1.5,
             position=position,
             collider='box',
-            unlit=True,
         )
 
         self.powerup_type = powerup_type
@@ -63,7 +62,6 @@ class PowerUp(Entity):
             model='cube',
             color=type_data['effect_color'],
             scale=0.7,
-            unlit=True,
         )
 
         # Create rotating ring
@@ -72,7 +70,6 @@ class PowerUp(Entity):
             model='cube',
             color=type_data['color'],
             scale=(2, 0.1, 2),
-            unlit=True,
         )
 
     def update(self):
@@ -271,7 +268,6 @@ class PowerUpEffect:
             model='sphere',
             color=color.rgba(effect_color.r, effect_color.g, effect_color.b, 0.3),
             scale=2.5,
-            unlit=True,
         )
 
     def update(self):
