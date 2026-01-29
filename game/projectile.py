@@ -8,11 +8,15 @@ class Projectile(Entity):
 
     def __init__(self, position, direction, owner_id, projectile_id=0,
                  speed=60, damage=15, lifetime=3.0, weapon='primary', **kwargs):
-        # Different visuals for primary vs secondary
+        # Different visuals for each weapon type
         if weapon == 'secondary':
             proj_color = color.rgb(255, 100, 50)  # Orange-red
             proj_scale = 0.5
             trail_scale = (0.3, 0.3, 1.2)
+        elif weapon == 'spreadshot':
+            proj_color = color.rgb(150, 200, 255)  # Light blue
+            proj_scale = 0.12
+            trail_scale = (0.06, 0.06, 0.3)
         else:
             proj_color = color.rgb(200, 255, 100)  # Yellow-green
             proj_scale = 0.15
@@ -38,7 +42,12 @@ class Projectile(Entity):
         self.active = True
 
         # Visual trail effect
-        trail_color = color.rgb(255, 150, 50) if weapon == 'secondary' else color.rgb(150, 200, 80)
+        if weapon == 'secondary':
+            trail_color = color.rgb(255, 150, 50)
+        elif weapon == 'spreadshot':
+            trail_color = color.rgb(100, 150, 255)
+        else:
+            trail_color = color.rgb(150, 200, 80)
         self.trail = Entity(
             parent=self,
             model='cube',
@@ -133,11 +142,15 @@ class ProjectileManager:
             projectile_id = self.next_id
             self.next_id += 1
 
-        # Different stats for primary vs secondary
+        # Different stats for each weapon type
         if weapon == 'secondary':
             speed = 40  # Slower
             damage = 50  # More damage
             lifetime = 4.0  # Longer range
+        elif weapon == 'spreadshot':
+            speed = 65  # Medium speed
+            damage = 8  # Less damage per projectile (but 3 projectiles)
+            lifetime = 2.0  # Medium range
         else:
             speed = 70  # Fast
             damage = 12  # Less damage

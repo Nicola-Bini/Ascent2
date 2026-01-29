@@ -37,6 +37,10 @@ class Player(Entity):
         self.secondary_cooldown = 1.5
         self.last_secondary_time = 0
 
+        # Combat - Spreadshot weapon (3 projectiles)
+        self.spreadshot_cooldown = 0.4
+        self.last_spreadshot_time = 0
+
         # Stats
         self.kills = 0
         self.deaths = 0
@@ -64,7 +68,8 @@ class Player(Entity):
             'w': False, 's': False, 'a': False, 'd': False,
             'q': False, 'e': False,
             'space': False, 'shift': False, 'control': False,
-            'left mouse': False, 'right mouse': False
+            'left mouse': False, 'right mouse': False, 'middle mouse': False,
+            '3': False  # Alternative spreadshot key
         }
 
         # For network interpolation
@@ -434,6 +439,47 @@ class Player(Entity):
             'direction': (self.forward.x, self.forward.y, self.forward.z),
             'owner_id': self.player_id,
             'weapon': 'secondary'
+        }
+
+    def can_shoot_spreadshot(self):
+        return self.is_alive and (time.time() - self.last_spreadshot_time) >= self.spreadshot_cooldown
+
+    def shoot_spreadshot(self):
+        """Fire spreadshot - returns 3 projectile directions."""
+        self.last_spreadshot_time = time.time()
+
+        # Get forward and right vectors
+        fwd = self.forward
+        right = self.right
+
+        # Calculate spread angle (15 degrees)
+        spread_angle = 0.26  # ~15 degrees in radians
+
+        # Center shot
+        dir_center = (fwd.x, fwd.y, fwd.z)
+
+        # Left shot (rotated around up axis)
+        import math
+        cos_a = math.cos(spread_angle)
+        sin_a = math.sin(spread_angle)
+        dir_left = (
+            fwd.x * cos_a - right.x * sin_a,
+            fwd.y,
+            fwd.z * cos_a - right.z * sin_a
+        )
+
+        # Right shot
+        dir_right = (
+            fwd.x * cos_a + right.x * sin_a,
+            fwd.y,
+            fwd.z * cos_a + right.z * sin_a
+        )
+
+        return {
+            'position': (self.position.x, self.position.y, self.position.z),
+            'directions': [dir_center, dir_left, dir_right],
+            'owner_id': self.player_id,
+            'weapon': 'spreadshot'
         }
 
     def take_damage(self, amount, attacker_id=None):

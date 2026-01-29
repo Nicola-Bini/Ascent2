@@ -367,6 +367,39 @@ class Game:
         elif self.client:
             self.client.send_shoot(shot_data)
 
+    def _shoot_spreadshot(self):
+        """Handle spreadshot weapon (3 projectiles in spread pattern)."""
+        if not self.local_player or not self.local_player.can_shoot_spreadshot():
+            return
+
+        shot_data = self.local_player.shoot_spreadshot()
+
+        # Spawn 3 projectiles
+        for direction in shot_data["directions"]:
+            self.projectile_manager.spawn(
+                position=shot_data["position"],
+                direction=direction,
+                owner_id=shot_data["owner_id"],
+                weapon='spreadshot'
+            )
+
+        # Muzzle flash effect (larger for spreadshot)
+        self.particle_manager.create_muzzle_flash(
+            shot_data["position"],
+            shot_data["directions"][0],  # Center direction
+            'primary'  # Use primary style but will be brighter
+        )
+
+        # Play laser sound
+        self.play_sfx('laser')
+
+        if self.is_host and self.server:
+            self.server._broadcast(
+                {"type": NetworkMessage.PROJECTILE_SPAWN, "projectile": shot_data}
+            )
+        elif self.client:
+            self.client.send_shoot(shot_data)
+
     def update(self):
         """Main game update loop."""
         if self.state != "playing":
@@ -381,6 +414,8 @@ class Game:
                 self._shoot_primary()
             if self.local_player.keys_held.get('right mouse', False):
                 self._shoot_secondary()
+            if self.local_player.keys_held.get('middle mouse', False) or self.local_player.keys_held.get('3', False):
+                self._shoot_spreadshot()
 
         # Update HUD
         self.hud.update_health(self.local_player.health)
