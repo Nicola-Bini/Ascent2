@@ -26,26 +26,24 @@ A Descent-inspired 6DOF (Six Degrees of Freedom) multiplayer space shooter built
 - **Physics**:
   - Acceleration: 45 units/s²
   - Deceleration: 5 units/s² (space friction)
-  - Max speed: 50 units/s
-  - Strafe/vertical multipliers: 0.8x
-- **Test Results**: PENDING
+  - Max speed: 50 units/s (affected by speed boost)
+  - Strafe/vertical multipliers: 0.9x/0.85x
 
 ### Weapon System
 - **Status**: Implemented
 - **Primary Weapon**:
   - Rapid fire laser
   - Speed: 70 units/s
-  - Damage: 12 per hit
+  - Damage: 12 per hit (affected by damage boost)
   - Fire rate: 0.12s cooldown
-  - Color: Cyan
+  - Color: Yellow-green projectile, cyan muzzle flash
 - **Secondary Weapon**:
   - Slow powerful missile
   - Speed: 40 units/s
-  - Damage: 50 per hit
-  - Fire rate: 0.8s cooldown
+  - Damage: 50 per hit (affected by damage boost)
+  - Fire rate: 1.5s cooldown
   - Creates explosion on impact
-  - Color: Orange/Red
-- **Test Results**: PENDING
+  - Color: Orange-red projectile and flash
 
 ### Arena/Level
 - **Status**: Implemented
@@ -57,13 +55,13 @@ A Descent-inspired 6DOF (Six Degrees of Freedom) multiplayer space shooter built
   - Mid-level platforms
   - Cover blocks at various heights
   - Grid lines on floor for depth perception
+  - `unlit=True` on all geometry for consistent colors
 - **Color Scheme**:
   - Floor: Dark metallic gray-green (25, 30, 28)
   - Ceiling: Very dark (18, 20, 22)
   - Z-walls: Dark blue-gray (28, 32, 42)
   - X-walls: Dark rust/brown (38, 30, 26)
   - Tunnels: Dark grays with blue accent lights
-- **Test Results**: PENDING (texture issues being fixed)
 
 ### Multiplayer
 - **Status**: Implemented
@@ -73,87 +71,99 @@ A Descent-inspired 6DOF (Six Degrees of Freedom) multiplayer space shooter built
   - Player count display
   - Network interpolation for smooth movement
 - **Port**: 5555 (UDP)
-- **Test Results**: Working (see MULTIPLAYER_DEBUG.md)
+
+### Audio System
+- **Status**: Implemented
+- **Sound Effects**:
+  - Laser fire (primary weapon) - descending pitch synth
+  - Missile launch (secondary weapon) - rumble with whoosh
+  - Explosion - bass boom with noise burst
+  - Hit/damage - metallic impact
+- **Music**:
+  - Menu music - arpeggio pattern
+  - Game ambient - evolving pad with bass pulse
+- **Implementation**: Procedurally generated WAV files
+
+### Particle Effects
+- **Status**: Implemented
+- **Effects**:
+  - Muzzle flash on weapon fire (cyan for primary, orange for secondary)
+  - Explosion particles (fire, sparks, smoke layers)
+  - Size variants: small, medium, large explosions
+- **Features**:
+  - Billboard particles (always face camera)
+  - Color interpolation over lifetime
+  - Physics-based velocity and drag
+
+### Power-Ups System
+- **Status**: Implemented
+- **Types**:
+  - **Health** (Green): +25 HP, 15s respawn
+  - **Speed** (Blue): 1.5x speed for 10s, 20s respawn
+  - **Damage** (Orange): 2x damage for 10s, 25s respawn
+  - **Shield** (Purple): +50 shield points, 30s respawn
+- **Features**:
+  - Animated (rotating, bobbing, glowing)
+  - Strategic spawn locations
+  - Auto-respawn after collection
+  - Shield absorbs damage before health
+
+### Minimap/Radar
+- **Status**: Implemented
+- **Features**:
+  - Top-down view in top-right corner
+  - Local player (green) with direction indicator
+  - Other players (red dots)
+  - Power-ups (colored by type)
+  - Arena structures displayed
+- **Real-time updates** synced with game state
 
 ### UI/HUD
 - **Status**: Implemented
 - **Elements**:
-  - Health bar (green)
+  - Health bar (green, color changes based on level)
+  - Shield bar (purple)
   - Speed indicator
   - Player count
   - Server IP display (when hosting)
   - Kill/Death stats
+  - Crosshair
   - Respawn screen
+  - Message notifications for power-up collection
 
 ---
 
 ## Planned Features
 
-### Phase 1: Audio System
-- [ ] Background ambient music (industrial/electronic)
-- [ ] Primary weapon sound (laser zap)
-- [ ] Secondary weapon sound (missile launch)
-- [ ] Explosion sounds
-- [ ] Engine/thrust sounds
-- [ ] Hit/damage sounds
-- [ ] Menu music
+### Phase 1: Additional Weapons
+- [ ] Spreadshot (fires 3 projectiles)
+- [ ] Homing missiles
+- [ ] Plasma cannon (charge attack)
 
 ### Phase 2: Visual Enhancements
-- [ ] Particle effects for thrusters
-- [ ] Muzzle flash on weapons
-- [ ] Better explosion effects
+- [ ] Thruster particle effects on player ship
+- [ ] Projectile trails with particles
 - [ ] Screen shake on damage
 - [ ] Motion blur at high speeds
 - [ ] Ambient fog in tunnels
 
 ### Phase 3: Gameplay Features
-- [ ] Power-ups (health, speed boost, damage boost)
-- [ ] Multiple weapon types (spreadshot, homing missiles)
-- [ ] Shields system
-- [ ] Radar/minimap
+- [ ] Multiple weapon loadouts
 - [ ] Score tracking and leaderboard
-- [ ] Different game modes (deathmatch, team deathmatch, CTF)
+- [ ] Different game modes (deathmatch, team DM, CTF)
+- [ ] Bot AI for single player
 
 ### Phase 4: Level Design
 - [ ] Multiple arena layouts
 - [ ] Dynamic obstacles (moving platforms)
 - [ ] Hazards (lava, energy fields)
 - [ ] Secret areas
-- [ ] Environmental lighting effects
 
 ### Phase 5: Polish
-- [ ] Main menu improvements
 - [ ] Settings screen (sensitivity, volume, graphics)
 - [ ] Key rebinding
 - [ ] Tutorial/training mode
-- [ ] Bot AI for single player
-
----
-
-## Test Results Log
-
-### Test Session Template
-```
-Date: YYYY-MM-DD
-Feature: Feature Name
-Test Type: Visual/Functional/Performance
-Steps:
-  1. Step one
-  2. Step two
-Screenshots:
-  - screenshot_name.png: Description
-Result: PASS/FAIL
-Notes: Any observations
-```
-
-### Test Sessions
-
-#### Session 1: Arena Rendering
-- **Date**: 2026-01-29
-- **Feature**: Arena textures/colors
-- **Issue**: Walls rendering as white/bright instead of dark colors
-- **Fix Applied**: Added `unlit=True` to all arena entities
-- **Result**: PENDING VERIFICATION
+- [ ] Better ship models
 
 ---
 
@@ -166,10 +176,35 @@ game/
 ├── networking.py     # Multiplayer networking (UDP)
 ├── projectile.py     # Projectile and explosion systems
 ├── ui.py             # HUD and menu systems
-├── audio.py          # Sound effects and music (TODO)
+├── audio.py          # Sound generation and management
+├── particles.py      # Particle effects system
+├── powerups.py       # Power-up collectibles
+├── minimap.py        # Minimap/radar display
 ├── test_framework.py # Basic testing utilities
 ├── auto_tester.py    # Automated visual testing
+├── sounds/           # Generated audio files
 └── test_results/     # Screenshot test results
+```
+
+---
+
+## Testing
+
+### Automated Testing
+The game includes an automated testing framework (`auto_tester.py`) that can:
+- Launch the game
+- Simulate input via AppleScript (macOS)
+- Take screenshots at specified intervals
+- Save test results as JSON
+
+### Running Tests
+```bash
+cd game
+python auto_tester.py menu      # Test menu display
+python auto_tester.py host      # Test hosting
+python auto_tester.py movement  # Test movement
+python auto_tester.py shooting  # Test weapons
+python auto_tester.py all       # Run all tests
 ```
 
 ---
@@ -190,6 +225,9 @@ game/
 - Maximum projectiles: 100 active
 - Maximum players: 8
 
-### Known Issues
-1. Texture colors appearing too bright (lighting issue)
-2. Some walls may not render correctly from certain angles
+### Recent Changes
+- Added `unlit=True` to arena entities for consistent colors
+- Implemented procedural audio generation
+- Added particle effects for weapons
+- Implemented power-up system with 4 types
+- Added minimap showing arena and entities
