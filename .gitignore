@@ -1,0 +1,21 @@
+# Virtual environment
+game_env/
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store
+
+# Logs (keep structure, ignore contents)
+game/test_logs/*.log
+game/test_logs/*.png
+
+# IDE
+.idea/
+.vscode/
+*.swp
