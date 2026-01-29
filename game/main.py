@@ -238,9 +238,9 @@ class Game:
         self.main_menu.hide()
         self.join_dialog.hide()
 
-        # Create arena - use full size that matches the tunnel/obstacle layout
+        # Create arena - uses default 20x size (4000, 1600, 4000)
         print("[LOG] Creating arena...")
-        self.arena = Arena(size=(200, 80, 200))
+        self.arena = Arena()
         print(
             f"[LOG] Arena created with {len(self.arena.walls)} walls and {len(self.arena.obstacles)} obstacles"
         )
