@@ -20,11 +20,11 @@ class Projectile(Entity):
             proj_model = 'sphere'
             trail_scale = (0.06, 0.06, 0.3)
         else:
-            # Primary laser - long thick beam
+            # Primary laser - long thick beam (3x bigger)
             proj_color = Color(100/255, 255/255, 150/255, 1)  # Bright green laser
-            proj_scale = (0.35, 0.35, 3.0)  # Even thicker and longer
+            proj_scale = (1.05, 1.05, 9.0)  # 3x thicker and longer
             proj_model = 'cube'
-            trail_scale = (0.25, 0.25, 1.5)
+            trail_scale = (0.75, 0.75, 4.5)
 
         super().__init__(
             model=proj_model,
@@ -211,9 +211,9 @@ class ProjectileManager:
             damage = 8  # Less damage per projectile (but 3 projectiles)
             lifetime = 2.0  # Medium range
         else:
-            speed = 350  # Very fast laser
+            speed = 700  # Ultra fast laser (2x faster)
             damage = 12  # Less damage
-            lifetime = 2.0
+            lifetime = 1.5
 
         proj = Projectile(
             position=position,
@@ -299,9 +299,9 @@ class ProjectileManager:
                 })
                 to_remove.append(proj_id)
 
-                # Create explosion for secondary weapon hitting obstacles
+                # Create explosion for secondary weapon hitting obstacles (3x bigger)
                 if proj.weapon == 'secondary':
-                    self.create_explosion(proj.hit_position, size=24.0)  # 4x bigger explosion
+                    self.create_explosion(proj.hit_position, size=72.0)
                 continue
 
             # Check arena bounds
@@ -313,9 +313,9 @@ class ProjectileManager:
                 hit_wall = True
                 to_remove.append(proj_id)
 
-                # Create explosion for secondary weapon hitting walls
+                # Create explosion for secondary weapon hitting walls (3x bigger)
                 if proj.weapon == 'secondary':
-                    self.create_explosion(pos, size=24.0)  # 4x bigger explosion
+                    self.create_explosion(pos, size=72.0)
                     obstacle_hits.append({
                         'position': Vec3(pos),
                         'weapon': proj.weapon
@@ -331,7 +331,8 @@ class ProjectileManager:
 
                 # Distance-based collision
                 dist = (player.position - proj.position).length()
-                hit_radius = 2.0 if proj.weapon == 'secondary' else 1.5
+                # Laser has 3x bigger hitbox
+                hit_radius = 2.0 if proj.weapon == 'secondary' else 4.5 if proj.weapon == 'primary' else 1.5
 
                 if dist < hit_radius:
                     hits.append({
@@ -344,9 +345,33 @@ class ProjectileManager:
                     })
                     to_remove.append(proj_id)
 
-                    # Create explosion for secondary weapon
+                    # Create explosion for secondary weapon (3x bigger) with splash damage
                     if proj.weapon == 'secondary':
-                        self.create_explosion(proj.position, size=28.0)  # 4x bigger explosion
+                        self.create_explosion(proj.position, size=84.0)  # 3x bigger explosion
+                        # Splash damage to nearby players
+                        splash_radius = 15.0
+                        splash_damage = proj.damage * 0.5  # 50% damage for splash
+                        for other_player in all_players.values():
+                            if other_player.player_id == player.player_id:
+                                continue  # Already hit directly
+                            if other_player.player_id == proj.owner_id:
+                                continue  # Don't damage self
+                            if not other_player.is_alive:
+                                continue
+                            splash_dist = (other_player.position - proj.position).length()
+                            if splash_dist < splash_radius:
+                                # Damage falls off with distance
+                                damage_mult = 1.0 - (splash_dist / splash_radius)
+                                actual_damage = int(splash_damage * damage_mult)
+                                if actual_damage > 0:
+                                    hits.append({
+                                        'projectile_id': proj_id,
+                                        'target_id': other_player.player_id,
+                                        'attacker_id': proj.owner_id,
+                                        'damage': actual_damage,
+                                        'weapon': 'splash',
+                                        'position': Vec3(proj.position)
+                                    })
                     break
 
         # Clean up
