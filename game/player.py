@@ -348,13 +348,14 @@ class Player(Entity):
         ship_right = self.right
         ship_up = self.up
 
-        # Handle boost (shift key) - redirect velocity to current facing direction at reduced speed
+        # Handle boost (shift key) - redirect velocity to current facing direction
+        was_boosting = self.boost_active
         self.boost_active = keys['shift']
-        if self.boost_active:
-            # Get current speed, reduce it, and redirect to facing direction
+        if self.boost_active and not was_boosting:
+            # On first press: take current speed and redirect to facing direction
             current_speed = self.velocity.length()
-            # Reduce speed significantly and redirect to where we're looking
-            redirect_speed = min(current_speed * 0.5, self.max_speed * 0.3)
+            # Keep most of the speed, just redirect it
+            redirect_speed = max(current_speed * 0.8, self.max_speed * 0.5)
             self.velocity = ship_forward * redirect_speed
 
         # Calculate effective acceleration and max speed
