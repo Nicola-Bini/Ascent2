@@ -297,20 +297,23 @@ class Game:
         )
         print(f"[LOG] Player {player_id} spawned at {spawn_pos}")
 
-        # Spawn enemy bots
+        # Spawn enemy bots - aggressive, will respawn
         self.bots = []
+        self.bot_respawn_timers = {}  # bot_id -> respawn_time
         bot_positions = [
-            Vec3(800, 100, 800),   # Bot 1 - upper quadrant
-            Vec3(-800, -100, -800),  # Bot 2 - lower opposite quadrant
+            Vec3(800, 100, 800),
+            Vec3(-800, -100, -800),
+            Vec3(800, -100, -800),
+            Vec3(-800, 100, 800),
         ]
         for i, bot_pos in enumerate(bot_positions):
             bot = Bot(
-                bot_id=1000 + i,  # High IDs to avoid conflict with players
+                bot_id=1000 + i,
                 position=bot_pos,
                 arena_bounds=self.arena.half_size,
-                difficulty='medium'
+                difficulty='hard'  # Aggressive bots
             )
-            bot.target_entity = self.local_player  # Target the player
+            bot.target_entity = self.local_player
             self.bots.append(bot)
             print(f"[LOG] Bot {i} spawned at {bot_pos}")
 
@@ -497,8 +500,15 @@ class Game:
                     )
 
         # Update bots
+        import random as rnd
         for bot in self.bots:
             if bot.is_alive:
+                # Randomly switch target between player and other bots
+                if rnd.random() < 0.01:  # 1% chance per frame to switch target
+                    possible_targets = [self.local_player] + [b for b in self.bots if b != bot and b.is_alive]
+                    if possible_targets:
+                        bot.target_entity = rnd.choice(possible_targets)
+
                 bot.update()
                 # Check if bot wants to shoot
                 shot_data = bot.try_shoot()
@@ -509,12 +519,22 @@ class Game:
                         owner_id=shot_data['owner_id'],
                         weapon='primary'
                     )
-                    # Play bot shooting sound
                     self.play_sfx('laser')
 
                 # Update bot on minimap
                 if hasattr(self, 'minimap') and self.minimap:
                     self.minimap.update_other_player(bot.bot_id, bot.position, bot.is_alive)
+            else:
+                # Handle bot respawn
+                if bot.bot_id not in self.bot_respawn_timers:
+                    self.bot_respawn_timers[bot.bot_id] = time.time() + 3.0  # 3 sec respawn
+                elif time.time() >= self.bot_respawn_timers[bot.bot_id]:
+                    # Respawn at random position
+                    spawn_pos = self.arena.get_random_spawn_point()
+                    bot.respawn((spawn_pos.x, spawn_pos.y, spawn_pos.z))
+                    bot.target_entity = self.local_player
+                    del self.bot_respawn_timers[bot.bot_id]
+                    print(f"[LOG] Bot {bot.bot_id} respawned")
 
         # Handle respawn
         if not self.local_player.is_alive:

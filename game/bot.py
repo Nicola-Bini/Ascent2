@@ -383,6 +383,11 @@ class Bot(Entity):
         self.state = BotState.PATROL
         self.velocity = Vec3(0, 0, 0)
 
+        # Show model
+        self.visible = True
+        self.enabled = True
+        if hasattr(self, 'model_container'):
+            self.model_container.visible = True
         for part in self.parts:
             part.visible = True
 
