@@ -27,22 +27,25 @@ class Arena:
             color=color.rgb(25, 30, 28),
             scale=(sx + 2, 1, sz + 2),
             position=(0, -hy - 0.5, 0),
+            unlit=True,
         ))
 
         # Floor grid lines for depth perception
         for i in range(-int(hx) + 20, int(hx), 40):
             self.walls.append(Entity(
                 model='cube',
-                color=color.rgb(35, 42, 38),
+                color=color.rgb(40, 50, 45),
                 scale=(1.5, 0.15, sz),
                 position=(i, -hy + 0.15, 0),
+                unlit=True,
             ))
         for i in range(-int(hz) + 20, int(hz), 40):
             self.walls.append(Entity(
                 model='cube',
-                color=color.rgb(35, 42, 38),
+                color=color.rgb(40, 50, 45),
                 scale=(sx, 0.15, 1.5),
                 position=(0, -hy + 0.15, i),
+                unlit=True,
             ))
 
         # Ceiling - very dark
@@ -51,6 +54,7 @@ class Arena:
             color=color.rgb(18, 20, 22),
             scale=(sx + 2, 1, sz + 2),
             position=(0, hy + 0.5, 0),
+            unlit=True,
         ))
 
         # Front wall (positive Z) - dark blue-gray industrial
@@ -59,6 +63,7 @@ class Arena:
             color=color.rgb(28, 32, 42),
             scale=(sx + 2, sy + 2, 1),
             position=(0, 0, hz + 0.5),
+            unlit=True,
         ))
 
         # Back wall (negative Z) - dark blue-gray
@@ -67,6 +72,7 @@ class Arena:
             color=color.rgb(28, 32, 42),
             scale=(sx + 2, sy + 2, 1),
             position=(0, 0, -hz - 0.5),
+            unlit=True,
         ))
 
         # Left wall (negative X) - dark rust/brown
@@ -75,6 +81,7 @@ class Arena:
             color=color.rgb(38, 30, 26),
             scale=(1, sy + 2, sz + 2),
             position=(-hx - 0.5, 0, 0),
+            unlit=True,
         ))
 
         # Right wall (positive X) - dark rust/brown
@@ -83,40 +90,46 @@ class Arena:
             color=color.rgb(38, 30, 26),
             scale=(1, sy + 2, sz + 2),
             position=(hx + 0.5, 0, 0),
+            unlit=True,
         ))
 
     def _create_tunnels(self):
         """Create tunnel structures."""
         tunnel_wall = color.rgb(32, 35, 38)
         tunnel_inner = color.rgb(26, 28, 32)
-        light_strip = color.rgb(55, 85, 105)  # Dim blue lights
+        light_strip = color.rgb(70, 120, 150)  # Brighter blue lights
 
         # Central horizontal tunnel (along Z axis)
         # Top
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(30, 3, 100), position=(0, 12, 0),
+            unlit=True,
         ))
         # Bottom
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(30, 3, 100), position=(0, -12, 0),
+            unlit=True,
         ))
         # Left side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(3, 21, 100), position=(-16.5, 0, 0),
+            unlit=True,
         ))
         # Right side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(3, 21, 100), position=(16.5, 0, 0),
+            unlit=True,
         ))
         # Lights inside tunnel
         for z in range(-40, 50, 20):
             self.obstacles.append(Entity(
                 model='cube', color=light_strip,
                 scale=(25, 0.5, 2), position=(0, 10, z),
+                unlit=True,
             ))
 
         # Central cross tunnel (along X axis) - offset vertically
@@ -124,29 +137,33 @@ class Arena:
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(100, 3, 25), position=(0, 27, 0),
+            unlit=True,
         ))
         # Bottom
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(100, 3, 25), position=(0, 3, 0),
+            unlit=True,
         ))
         # Front side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(100, 21, 3), position=(0, 15, 14),
+            unlit=True,
         ))
         # Back side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(100, 21, 3), position=(0, 15, -14),
+            unlit=True,
         ))
 
     def _create_obstacles(self):
         """Create obstacles for cover."""
         dark_metal = color.rgb(32, 35, 38)
-        rust = color.rgb(42, 32, 28)
-        industrial_blue = color.rgb(30, 36, 45)
-        teal_metal = color.rgb(32, 45, 48)
+        rust = color.rgb(50, 38, 32)
+        industrial_blue = color.rgb(30, 36, 48)
+        teal_metal = color.rgb(32, 50, 55)
 
         configs = [
             # Corner pillars - tall structures
@@ -180,6 +197,7 @@ class Arena:
                 color=c['color'],
                 scale=c['scale'],
                 position=c['pos'],
+                unlit=True,
             ))
 
     def get_random_spawn_point(self):

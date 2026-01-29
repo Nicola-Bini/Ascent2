@@ -39,6 +39,7 @@ from projectile import ProjectileManager
 from arena import Arena
 from networking import NetworkServer, NetworkClient, NetworkMessage, get_local_ip
 from ui import MainMenu, JoinDialog, HUD, RespawnScreen
+from audio import AudioManager, AUDIO_DIR
 
 
 class Game:
@@ -71,6 +72,10 @@ class Game:
 
         # Systems
         self.projectile_manager = ProjectileManager()
+
+        # Audio
+        self.audio_manager = AudioManager()
+        self._setup_audio()
 
         # Respawn
         self.respawn_timer = 0
@@ -128,6 +133,67 @@ class Game:
         AmbientLight(color=color.rgb(60, 60, 70))
 
         print("[LOG] Lighting setup complete")
+
+    def _setup_audio(self):
+        """Setup audio system with sounds and music."""
+        print("[LOG] Setting up audio...")
+
+        # Load sound effects
+        try:
+            self.sfx_laser = Audio(
+                str(AUDIO_DIR / 'laser.wav'),
+                loop=False, autoplay=False, volume=0.5
+            )
+            self.sfx_missile = Audio(
+                str(AUDIO_DIR / 'missile.wav'),
+                loop=False, autoplay=False, volume=0.6
+            )
+            self.sfx_explosion = Audio(
+                str(AUDIO_DIR / 'explosion.wav'),
+                loop=False, autoplay=False, volume=0.7
+            )
+            self.sfx_hit = Audio(
+                str(AUDIO_DIR / 'hit.wav'),
+                loop=False, autoplay=False, volume=0.5
+            )
+
+            # Background music
+            self.music_menu = Audio(
+                str(AUDIO_DIR / 'menu_music.wav'),
+                loop=True, autoplay=False, volume=0.3
+            )
+            self.music_game = Audio(
+                str(AUDIO_DIR / 'ambient_music.wav'),
+                loop=True, autoplay=False, volume=0.25
+            )
+
+            # Start menu music
+            self.music_menu.play()
+
+            print("[LOG] Audio setup complete")
+        except Exception as e:
+            print(f"[LOG] Audio setup failed: {e}")
+            self.sfx_laser = None
+            self.sfx_missile = None
+            self.sfx_explosion = None
+            self.sfx_hit = None
+            self.music_menu = None
+            self.music_game = None
+
+    def play_sfx(self, name):
+        """Play a sound effect."""
+        try:
+            if name == 'laser' and self.sfx_laser:
+                # Create new audio instance for overlapping sounds
+                Audio(str(AUDIO_DIR / 'laser.wav'), volume=0.4)
+            elif name == 'missile' and self.sfx_missile:
+                Audio(str(AUDIO_DIR / 'missile.wav'), volume=0.5)
+            elif name == 'explosion' and self.sfx_explosion:
+                Audio(str(AUDIO_DIR / 'explosion.wav'), volume=0.6)
+            elif name == 'hit' and self.sfx_hit:
+                Audio(str(AUDIO_DIR / 'hit.wav'), volume=0.4)
+        except Exception as e:
+            pass  # Silently ignore audio errors
 
     def host_game(self):
         """Start hosting a game."""
@@ -205,6 +271,15 @@ class Game:
         self.hud.update_stats(0, 0)
         self.hud.update_player_count(1)
 
+        # Switch to game music
+        try:
+            if self.music_menu:
+                self.music_menu.stop()
+            if self.music_game:
+                self.music_game.play()
+        except:
+            pass
+
         self.state = "playing"
         print(f"Game started as Player {player_id}")
 
@@ -242,6 +317,9 @@ class Game:
             weapon='primary'
         )
 
+        # Play laser sound
+        self.play_sfx('laser')
+
         if self.is_host and self.server:
             self.server._broadcast(
                 {"type": NetworkMessage.PROJECTILE_SPAWN, "projectile": shot_data}
@@ -262,6 +340,9 @@ class Game:
             owner_id=shot_data["owner_id"],
             weapon='secondary'
         )
+
+        # Play missile sound
+        self.play_sfx('missile')
 
         if self.is_host and self.server:
             self.server._broadcast(
@@ -466,6 +547,12 @@ class Game:
             attacker_id = hit["attacker_id"]
             damage = hit["damage"]
 
+            # Play hit/explosion sounds
+            if damage >= 40:  # Secondary weapon = explosion
+                self.play_sfx('explosion')
+            else:
+                self.play_sfx('hit')
+
             # Apply damage
             if target_id == self.local_player.player_id:
                 died = self.local_player.take_damage(damage, attacker_id)
@@ -542,6 +629,15 @@ class Game:
         self.hud.hide()
         self.respawn_screen.hide()
         self.main_menu.show()
+
+        # Switch back to menu music
+        try:
+            if self.music_game:
+                self.music_game.stop()
+            if self.music_menu:
+                self.music_menu.play()
+        except:
+            pass
 
     def run(self):
         """Start the game."""
