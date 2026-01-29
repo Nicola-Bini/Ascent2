@@ -15,6 +15,9 @@ __pycache__/
 game/test_logs/*.log
 game/test_logs/*.png
 
+# Local settings (not synced)
+game/last_ip.txt
+
 # IDE
 .idea/
 .vscode/

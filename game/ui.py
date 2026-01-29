@@ -104,11 +104,12 @@ class MainMenu(Entity):
 class JoinDialog(Entity):
     """Dialog for entering host IP to join."""
 
-    def __init__(self, on_connect, on_cancel):
+    def __init__(self, on_connect, on_cancel, default_ip="192.168.1."):
         super().__init__(parent=camera.ui)
 
         self.on_connect = on_connect
         self.on_cancel = on_cancel
+        self.default_ip = default_ip
 
         # Background panel
         self.panel = Entity(
@@ -142,7 +143,7 @@ class JoinDialog(Entity):
         # IP input field
         self.ip_input = InputField(
             parent=self,
-            default_value='192.168.1.',
+            default_value=self.default_ip,
             scale=(0.35, 0.05),
             y=-0.03,
             limit_content_to='0123456789.',

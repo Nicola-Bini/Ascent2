@@ -45,6 +45,29 @@ from powerups import PowerUpSpawner
 from minimap import Minimap
 from bot import Bot
 
+# File to store last connected IP (not synced to git)
+LAST_IP_FILE = os.path.join(os.path.dirname(__file__), "last_ip.txt")
+
+
+def load_last_ip():
+    """Load the last connected IP from file."""
+    try:
+        if os.path.exists(LAST_IP_FILE):
+            with open(LAST_IP_FILE, 'r') as f:
+                return f.read().strip()
+    except:
+        pass
+    return "192.168.1."  # Default
+
+
+def save_last_ip(ip):
+    """Save the last connected IP to file."""
+    try:
+        with open(LAST_IP_FILE, 'w') as f:
+            f.write(ip)
+    except:
+        pass
+
 
 class Game:
     """Main game class managing all game systems."""
@@ -108,7 +131,9 @@ class Game:
         print(f"[LOG] MainMenu created, enabled={self.main_menu.enabled}")
 
         self.join_dialog = JoinDialog(
-            on_connect=self.join_game, on_cancel=self.cancel_join
+            on_connect=self.join_game,
+            on_cancel=self.cancel_join,
+            default_ip=load_last_ip()
         )
 
         self.hud = HUD()
@@ -229,6 +254,9 @@ class Game:
             self.main_menu.show()
             self.hud.show_message("Connection failed!", 3.0)
             return
+
+        # Save successful IP for next time
+        save_last_ip(host_ip)
 
         self.is_host = False
         self._start_game(player_id=self.client.player_id)

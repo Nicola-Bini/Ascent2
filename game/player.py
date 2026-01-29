@@ -4,7 +4,7 @@ import random
 import math
 
 # Ship visual scale multiplier
-SHIP_SCALE = 4.0
+SHIP_SCALE = 8.0
 
 
 class Player(Entity):
