@@ -18,11 +18,19 @@ class Player(Entity):
 
         # Physics settings
         self.velocity = Vec3(0, 0, 0)
-        self.max_speed = 100
-        self.acceleration = 90
+        self.max_speed = 200
+        self.acceleration = 180
         self.deceleration = 5
         self.strafe_multiplier = 0.9
         self.vertical_multiplier = 0.85
+
+        # Boost settings (shift key)
+        self.boost_multiplier = 10  # 10x speed/accel when boosting
+        self.boost_duration = 3.0  # seconds
+        self.boost_cooldown = 10.0  # seconds to recharge
+        self.boost_active = False
+        self.boost_timer = 0  # time remaining on active boost
+        self.boost_recharge = self.boost_cooldown  # fully charged at start
 
         # Atmosphere/air drag - ship stops when not thrusting
         # 0 = space (no drag), 1 = heavy atmosphere, 0.3 = light atmosphere
@@ -317,7 +325,29 @@ class Player(Entity):
 
         forward_input = (1 if keys['w'] else 0) - (1 if keys['s'] else 0)
         strafe_input = (1 if keys['d'] else 0) - (1 if keys['a'] else 0)
-        vertical_input = (1 if keys['space'] else 0) - (1 if (keys['shift'] or keys['control']) else 0)
+        vertical_input = (1 if keys['space'] else 0) - (1 if keys['control'] else 0)
+
+        # Handle boost (shift key)
+        if keys['shift'] and self.boost_recharge >= self.boost_cooldown and not self.boost_active:
+            # Activate boost
+            self.boost_active = True
+            self.boost_timer = self.boost_duration
+            self.boost_recharge = 0
+
+        # Update boost timers
+        if self.boost_active:
+            self.boost_timer -= dt
+            if self.boost_timer <= 0:
+                self.boost_active = False
+                self.boost_timer = 0
+        else:
+            # Recharge boost when not active
+            if self.boost_recharge < self.boost_cooldown:
+                self.boost_recharge += dt
+
+        # Calculate effective acceleration and max speed
+        current_accel = self.acceleration * (self.boost_multiplier if self.boost_active else 1)
+        current_max_speed = self.max_speed * (self.boost_multiplier if self.boost_active else 1)
 
         # Use entity's built-in direction vectors for proper 6DOF
         ship_forward = self.forward
@@ -326,11 +356,11 @@ class Player(Entity):
 
         accel = Vec3(0, 0, 0)
         if forward_input != 0:
-            accel += ship_forward * forward_input * self.acceleration
+            accel += ship_forward * forward_input * current_accel
         if strafe_input != 0:
-            accel += ship_right * strafe_input * self.acceleration * self.strafe_multiplier
+            accel += ship_right * strafe_input * current_accel * self.strafe_multiplier
         if vertical_input != 0:
-            accel += ship_up * vertical_input * self.acceleration * self.vertical_multiplier
+            accel += ship_up * vertical_input * current_accel * self.vertical_multiplier
 
         if accel.length() > 0:
             self.velocity += accel * dt
@@ -357,8 +387,9 @@ class Player(Entity):
         # Update thruster particles
         self._update_thruster_particles()
 
-        # Apply speed multiplier from power-ups
-        effective_max_speed = self.max_speed * self.speed_multiplier
+        # Apply speed multiplier from power-ups and boost
+        boost_mult = self.boost_multiplier if self.boost_active else 1
+        effective_max_speed = self.max_speed * self.speed_multiplier * boost_mult
 
         if self.velocity.length() > effective_max_speed:
             self.velocity = self.velocity.normalized() * effective_max_speed
