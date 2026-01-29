@@ -1,7 +1,11 @@
 """Player ship class with 6DOF controls and momentum-based physics."""
 from ursina import *
+from panda3d.core import Quat, Vec3 as PandaVec3
 import random
 import math
+
+# Ship visual scale multiplier
+SHIP_SCALE = 4.0
 
 
 class Player(Entity):
@@ -95,6 +99,10 @@ class Player(Entity):
         self.target_velocity = Vec3(0, 0, 0)
         self.interpolation_speed = 15
 
+        # Quaternion-based orientation (prevents gimbal lock)
+        self.orientation = Quat()
+        self.orientation.setHpr(PandaVec3(0, 0, 0))
+
         # Create StarCraft-inspired ship model
         self._create_ship_model()
 
@@ -103,16 +111,21 @@ class Player(Entity):
             mouse.visible = False
             camera.parent = scene
             camera.position = self.position
-            camera.rotation_x = 0
-            camera.rotation_y = 0
-            camera.rotation_z = 0
             camera.fov = 90
             camera.clip_plane_near = 0.1
             camera.clip_plane_far = 10000
+            # Apply initial quaternion orientation to camera
+            self._apply_orientation_to_camera()
             self._hide_local_ship()
 
     def _create_ship_model(self):
         """Create a StarCraft Wraith-inspired ship model."""
+        # Ship container for easy scaling
+        self.ship_container = Entity(
+            parent=self,
+            scale=SHIP_SCALE
+        )
+
         # Color scheme
         if self.is_local:
             main_color = Color(70/255, 85/255, 100/255, 1)  # Blue-gray (Terran)
@@ -125,7 +138,7 @@ class Player(Entity):
 
         # Main fuselage - elongated body
         self.fuselage = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=main_color,
             scale=(1.2, 0.6, 3.5),
@@ -134,7 +147,7 @@ class Player(Entity):
 
         # Cockpit - angled front section
         self.cockpit = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=Color(40/255, 60/255, 80/255, 1) if self.is_local else Color(80/255, 50/255, 40/255, 1),
             scale=(0.8, 0.5, 1.2),
@@ -144,7 +157,7 @@ class Player(Entity):
 
         # Cockpit glass
         self.cockpit_glass = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=Color(100/255, 180/255, 220/255, 1) if self.is_local else Color(200/255, 150/255, 100/255, 1),
             scale=(0.5, 0.3, 0.6),
@@ -154,7 +167,7 @@ class Player(Entity):
 
         # Left wing - swept back
         self.left_wing = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=main_color,
             scale=(3, 0.15, 1.8),
@@ -164,7 +177,7 @@ class Player(Entity):
 
         # Right wing - swept back
         self.right_wing = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=main_color,
             scale=(3, 0.15, 1.8),
@@ -174,7 +187,7 @@ class Player(Entity):
 
         # Left wing tip / weapon pod
         self.left_weapon = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=accent_color,
             scale=(0.5, 0.4, 1.5),
@@ -183,7 +196,7 @@ class Player(Entity):
 
         # Right wing tip / weapon pod
         self.right_weapon = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=accent_color,
             scale=(0.5, 0.4, 1.5),
@@ -192,7 +205,7 @@ class Player(Entity):
 
         # Tail fin - vertical stabilizer
         self.tail_fin = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=main_color,
             scale=(0.15, 1.2, 1.0),
@@ -201,7 +214,7 @@ class Player(Entity):
 
         # Left engine nacelle
         self.left_engine = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=Color(50/255, 55/255, 65/255, 1),
             scale=(0.6, 0.5, 1.8),
@@ -210,7 +223,7 @@ class Player(Entity):
 
         # Right engine nacelle
         self.right_engine = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=Color(50/255, 55/255, 65/255, 1),
             scale=(0.6, 0.5, 1.8),
@@ -219,7 +232,7 @@ class Player(Entity):
 
         # Left engine glow
         self.left_glow = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=engine_color,
             scale=(0.4, 0.35, 0.2),
@@ -228,7 +241,7 @@ class Player(Entity):
 
         # Right engine glow
         self.right_glow = Entity(
-            parent=self,
+            parent=self.ship_container,
             model='cube',
             color=engine_color,
             scale=(0.4, 0.35, 0.2),
@@ -300,28 +313,59 @@ class Player(Entity):
         else:
             self._interpolate_to_target()
 
+    def _apply_orientation_to_camera(self):
+        """Apply quaternion orientation to camera."""
+        # Convert quaternion to HPR (heading, pitch, roll) for camera
+        hpr = self.orientation.getHpr()
+        camera.rotation_y = hpr.x  # Heading
+        camera.rotation_x = hpr.y  # Pitch
+        camera.rotation_z = hpr.z  # Roll
+
+    def _get_orientation_vectors(self):
+        """Get forward, right, up vectors from quaternion orientation."""
+        # Extract rotation matrix from quaternion
+        mat = self.orientation
+        # Forward is -Z in Panda3D/Ursina convention
+        fwd = mat.xform(PandaVec3(0, 0, 1))
+        right = mat.xform(PandaVec3(1, 0, 0))
+        up = mat.xform(PandaVec3(0, 1, 0))
+        return Vec3(fwd.x, fwd.y, fwd.z), Vec3(right.x, right.y, right.z), Vec3(up.x, up.y, up.z)
+
     def _handle_local_input(self):
-        """Process input with physics-based movement."""
+        """Process input with physics-based movement using quaternion rotation."""
         dt = time.dt
 
         if mouse.locked:
             mv = mouse.velocity
-            # Transform mouse input based on roll angle for intuitive controls
-            roll_rad = math.radians(self.rotation_z)
-            cos_roll = math.cos(roll_rad)
-            sin_roll = math.sin(roll_rad)
-            # Rotate the mouse delta by the inverse of the roll
-            adjusted_x = mv[0] * cos_roll + mv[1] * sin_roll
-            adjusted_y = -mv[0] * sin_roll + mv[1] * cos_roll
-            # Immediate turning - velocity unchanged, ship rotates freely
-            self.rotation_y += adjusted_x * self.mouse_sensitivity
-            self.rotation_x -= adjusted_y * self.mouse_sensitivity
-            # No clamp - allow full 360 degree pitch for 6DOF flight
+            yaw_amount = -mv[0] * self.mouse_sensitivity * 0.01
+            pitch_amount = mv[1] * self.mouse_sensitivity * 0.01
+
+            # Get current orientation vectors
+            _, right_vec, up_vec = self._get_orientation_vectors()
+
+            # Create rotation quaternions for pitch and yaw
+            # Pitch around local right axis
+            pitch_quat = Quat()
+            pitch_quat.setFromAxisAngle(pitch_amount, PandaVec3(right_vec.x, right_vec.y, right_vec.z))
+
+            # Yaw around local up axis
+            yaw_quat = Quat()
+            yaw_quat.setFromAxisAngle(yaw_amount, PandaVec3(up_vec.x, up_vec.y, up_vec.z))
+
+            # Apply rotations to orientation
+            self.orientation = pitch_quat * yaw_quat * self.orientation
+            self.orientation.normalize()
 
         keys = self.keys_held
 
+        # Roll around forward axis
         roll_input = (1 if keys['e'] else 0) - (1 if keys['q'] else 0)
-        self.rotation_z += roll_input * self.roll_speed * dt
+        if roll_input != 0:
+            fwd_vec, _, _ = self._get_orientation_vectors()
+            roll_quat = Quat()
+            roll_quat.setFromAxisAngle(roll_input * self.roll_speed * dt * 0.017453, PandaVec3(fwd_vec.x, fwd_vec.y, fwd_vec.z))
+            self.orientation = roll_quat * self.orientation
+            self.orientation.normalize()
 
         forward_input = (1 if keys['w'] else 0) - (1 if keys['s'] else 0)
         strafe_input = (1 if keys['d'] else 0) - (1 if keys['a'] else 0)
@@ -349,10 +393,8 @@ class Player(Entity):
         current_accel = self.acceleration * (self.boost_multiplier if self.boost_active else 1)
         current_max_speed = self.max_speed * (self.boost_multiplier if self.boost_active else 1)
 
-        # Use entity's built-in direction vectors for proper 6DOF
-        ship_forward = self.forward
-        ship_right = self.right
-        ship_up = self.up
+        # Use quaternion-based direction vectors for proper 6DOF (no gimbal lock)
+        ship_forward, ship_right, ship_up = self._get_orientation_vectors()
 
         accel = Vec3(0, 0, 0)
         if forward_input != 0:
@@ -436,9 +478,11 @@ class Player(Entity):
             self.shake_intensity = 0
 
         camera.position = self.position + self.shake_offset
-        camera.rotation_x = self.rotation_x + self.shake_offset.y * 2
-        camera.rotation_y = self.rotation_y + self.shake_offset.x * 2
-        camera.rotation_z = self.rotation_z
+        # Apply quaternion orientation to camera (prevents gimbal lock)
+        self._apply_orientation_to_camera()
+        # Add shake to camera rotation
+        camera.rotation_x += self.shake_offset.y * 2
+        camera.rotation_y += self.shake_offset.x * 2
 
     def _interpolate_to_target(self):
         """Smoothly interpolate to target state for remote players."""
@@ -512,17 +556,9 @@ class Player(Entity):
         }
 
     def _get_aim_direction(self):
-        """Calculate forward direction based on camera rotation angles."""
-        # Convert rotation to radians
-        pitch = math.radians(self.rotation_x)
-        yaw = math.radians(self.rotation_y)
-
-        # Calculate direction vector (standard FPS camera math)
-        dir_x = math.cos(pitch) * math.sin(yaw)
-        dir_y = -math.sin(pitch)
-        dir_z = math.cos(pitch) * math.cos(yaw)
-
-        return Vec3(dir_x, dir_y, dir_z).normalized()
+        """Calculate forward direction from quaternion orientation."""
+        forward, _, _ = self._get_orientation_vectors()
+        return forward
 
     def can_shoot_spreadshot(self):
         return self.is_alive and (time.time() - self.last_spreadshot_time) >= self.spreadshot_cooldown
@@ -531,9 +567,8 @@ class Player(Entity):
         """Fire spreadshot - returns 3 projectile directions from both weapon pods."""
         self.last_spreadshot_time = time.time()
 
-        # Get forward and right vectors
-        fwd = self.forward
-        right = self.right
+        # Get forward and right vectors from quaternion
+        fwd, right, up = self._get_orientation_vectors()
 
         # Calculate spread angle (15 degrees)
         spread_angle = 0.26  # ~15 degrees in radians
@@ -546,14 +581,14 @@ class Player(Entity):
         sin_a = math.sin(spread_angle)
         dir_left = (
             fwd.x * cos_a - right.x * sin_a,
-            fwd.y,
+            fwd.y * cos_a - right.y * sin_a,
             fwd.z * cos_a - right.z * sin_a
         )
 
         # Right shot
         dir_right = (
             fwd.x * cos_a + right.x * sin_a,
-            fwd.y,
+            fwd.y * cos_a + right.y * sin_a,
             fwd.z * cos_a + right.z * sin_a
         )
 

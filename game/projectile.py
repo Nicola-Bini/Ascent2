@@ -211,7 +211,7 @@ class ProjectileManager:
             damage = 8  # Less damage per projectile (but 3 projectiles)
             lifetime = 2.0  # Medium range
         else:
-            speed = 700  # Ultra fast laser (2x faster)
+            speed = 3500  # Ultra fast laser (5x faster)
             damage = 12  # Less damage
             lifetime = 1.5
 
