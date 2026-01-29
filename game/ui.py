@@ -246,6 +246,16 @@ class HUD(Entity):
             color=color.cyan
         )
 
+        # Speed indicator
+        self.speed_text = Text(
+            parent=self,
+            text='SPD: 0',
+            scale=1,
+            position=(-0.55, -0.35),
+            origin=(-0.5, 0),
+            color=color.rgb(100, 200, 255)
+        )
+
         # Crosshair
         self.crosshair = Entity(
             parent=self,
@@ -306,6 +316,10 @@ class HUD(Entity):
     def update_stats(self, kills, deaths):
         """Update kill/death display."""
         self.stats_text.text = f'K: {kills}  D: {deaths}'
+
+    def update_speed(self, speed):
+        """Update speed display."""
+        self.speed_text.text = f'SPD: {int(speed)}'
 
     def update_player_count(self, count):
         """Update player count display."""

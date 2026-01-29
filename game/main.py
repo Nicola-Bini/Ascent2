@@ -220,27 +220,45 @@ class Game:
             elif self.join_dialog.enabled:
                 self.cancel_join()
 
-        # Shooting
-        if key == "left mouse down" and self.state == "playing":
-            if self.local_player and self.local_player.can_shoot():
-                self._shoot()
-
-        # Forward input to player for movement key tracking
+        # Forward input to player for movement and mouse tracking
         if self.state == "playing" and self.local_player:
             self.local_player.input(key)
 
-    def _shoot(self):
-        """Handle local player shooting."""
-        shot_data = self.local_player.shoot()
+    def _shoot_primary(self):
+        """Handle primary weapon (rapid fire)."""
+        if not self.local_player or not self.local_player.can_shoot_primary():
+            return
 
-        # Create projectile locally
+        shot_data = self.local_player.shoot_primary()
+
         self.projectile_manager.spawn(
             position=shot_data["position"],
             direction=shot_data["direction"],
             owner_id=shot_data["owner_id"],
+            weapon='primary'
         )
 
-        # Send to network
+        if self.is_host and self.server:
+            self.server._broadcast(
+                {"type": NetworkMessage.PROJECTILE_SPAWN, "projectile": shot_data}
+            )
+        elif self.client:
+            self.client.send_shoot(shot_data)
+
+    def _shoot_secondary(self):
+        """Handle secondary weapon (slow, powerful with explosion)."""
+        if not self.local_player or not self.local_player.can_shoot_secondary():
+            return
+
+        shot_data = self.local_player.shoot_secondary()
+
+        self.projectile_manager.spawn(
+            position=shot_data["position"],
+            direction=shot_data["direction"],
+            owner_id=shot_data["owner_id"],
+            weapon='secondary'
+        )
+
         if self.is_host and self.server:
             self.server._broadcast(
                 {"type": NetworkMessage.PROJECTILE_SPAWN, "projectile": shot_data}
@@ -262,14 +280,16 @@ class Game:
             print("[MAIN-DEBUG] First update() call")
         self._update_counter += 1
 
-        # Clamp player to arena bounds
-        if self.arena:
-            self.local_player.position = self.arena.clamp_position(
-                self.local_player.position
-            )
+        # Handle continuous fire when mouse buttons are held
+        if self.local_player.is_alive:
+            if self.local_player.keys_held.get('left mouse', False):
+                self._shoot_primary()
+            if self.local_player.keys_held.get('right mouse', False):
+                self._shoot_secondary()
 
         # Update HUD
         self.hud.update_health(self.local_player.health)
+        self.hud.update_speed(self.local_player.get_speed())
         self.hud.update_stats(self.local_player.kills, self.local_player.deaths)
 
         # Handle respawn
@@ -366,6 +386,7 @@ class Game:
                     player.set_network_state(
                         state.get("position", (0, 0, 0)),
                         state.get("rotation", (0, 0, 0)),
+                        state.get("velocity"),  # Pass velocity for interpolation
                     )
                     player.health = state.get("health", 100)
                     player.is_alive = state.get("is_alive", True)
@@ -382,6 +403,7 @@ class Game:
                     direction=proj.get("direction", (0, 0, 1)),
                     owner_id=owner_id,
                     projectile_id=proj.get("projectile_id"),
+                    weapon=proj.get("weapon", "primary"),
                 )
 
         elif msg_type == NetworkMessage.PLAYER_HIT:
@@ -424,10 +446,13 @@ class Game:
 
         print(f"[MAIN] Creating remote player {player_id} at {position}")
 
-        player = Player(player_id=player_id, is_local=False, position=position)
-        # Ensure remote player is visible
+        player = Player(
+            player_id=player_id,
+            is_local=False,
+            position=position,
+            arena_bounds=self.arena.get_bounds() if self.arena else (60, 30, 60)
+        )
         player.visible = True
-        player.color = color.orange
 
         self.remote_players[player_id] = player
         print(f"[MAIN] Added remote player {player_id}, total remote_players={len(self.remote_players)}")
@@ -441,13 +466,11 @@ class Game:
 
     def _check_collisions(self):
         """Check projectile collisions (host only)."""
-        # Collect all players
-        all_players = {self.local_player.player_id: self.local_player}
-        all_players.update(self.remote_players)
-
-        # Check collisions
-        bounds = self.arena.get_bounds() if self.arena else (25, 15, 25)
-        hits = self.projectile_manager.check_collisions(all_players, bounds)
+        # Check collisions - pass remote players and local player separately
+        bounds = self.arena.get_bounds() if self.arena else (60, 30, 60)
+        hits = self.projectile_manager.check_collisions(
+            self.remote_players, self.local_player, bounds
+        )
 
         # Process hits
         for hit in hits:

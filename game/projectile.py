@@ -1,15 +1,27 @@
-"""Projectile/bullet handling."""
+"""Projectile/bullet handling with primary and secondary weapons."""
 from ursina import *
+import random
 
 
 class Projectile(Entity):
     """Fast-moving projectile with collision detection."""
 
-    def __init__(self, position, direction, owner_id, projectile_id=0, speed=50, damage=25, lifetime=3.0, **kwargs):
+    def __init__(self, position, direction, owner_id, projectile_id=0,
+                 speed=60, damage=15, lifetime=3.0, weapon='primary', **kwargs):
+        # Different visuals for primary vs secondary
+        if weapon == 'secondary':
+            proj_color = color.rgb(255, 100, 50)  # Orange-red
+            proj_scale = 0.5
+            trail_scale = (0.3, 0.3, 1.2)
+        else:
+            proj_color = color.rgb(200, 255, 100)  # Yellow-green
+            proj_scale = 0.15
+            trail_scale = (0.08, 0.08, 0.4)
+
         super().__init__(
             model='sphere',
-            color=color.yellow,
-            scale=0.2,
+            color=proj_color,
+            scale=proj_scale,
             position=position,
             collider='sphere',
             **kwargs
@@ -21,16 +33,18 @@ class Projectile(Entity):
         self.speed = speed
         self.damage = damage
         self.lifetime = lifetime
+        self.weapon = weapon
         self.spawn_time = time.time()
         self.active = True
 
         # Visual trail effect
+        trail_color = color.rgb(255, 150, 50) if weapon == 'secondary' else color.rgb(150, 200, 80)
         self.trail = Entity(
             parent=self,
             model='cube',
-            color=color.orange,
-            scale=(0.1, 0.1, 0.5),
-            position=(0, 0, -0.3)
+            color=trail_color,
+            scale=trail_scale,
+            position=(0, 0, -trail_scale[2] * 0.5)
         )
 
     def update(self):
@@ -38,15 +52,15 @@ class Projectile(Entity):
         if not self.active:
             return
 
-        # Move forward
         self.position += self.direction * self.speed * time.dt
 
-        # Check lifetime
         if time.time() - self.spawn_time > self.lifetime:
             self.despawn()
 
-    def despawn(self):
-        """Remove the projectile."""
+    def despawn(self, create_explosion=False):
+        """Remove the projectile, optionally with explosion."""
+        if not self.active:
+            return
         self.active = False
         destroy(self)
 
@@ -56,8 +70,53 @@ class Projectile(Entity):
             'projectile_id': self.projectile_id,
             'owner_id': self.owner_id,
             'position': (self.position.x, self.position.y, self.position.z),
-            'direction': (self.direction.x, self.direction.y, self.direction.z)
+            'direction': (self.direction.x, self.direction.y, self.direction.z),
+            'weapon': self.weapon
         }
+
+
+class Explosion(Entity):
+    """Visual explosion effect."""
+
+    def __init__(self, position, size=3.0, duration=0.5, **kwargs):
+        super().__init__(
+            model='sphere',
+            color=color.rgb(255, 200, 50),
+            scale=0.1,
+            position=position,
+            **kwargs
+        )
+
+        self.max_size = size
+        self.duration = duration
+        self.spawn_time = time.time()
+        self.active = True
+
+        # Inner bright core
+        self.core = Entity(
+            parent=self,
+            model='sphere',
+            color=color.rgb(255, 255, 200),
+            scale=0.6
+        )
+
+        # Start expansion animation
+        self.animate_scale(size, duration=duration * 0.3, curve=curve.out_expo)
+        self.animate_color(color.rgb(255, 100, 30), duration=duration * 0.5)
+
+        # Schedule fadeout
+        invoke(self._fade_out, delay=duration * 0.3)
+
+    def _fade_out(self):
+        """Fade out and destroy."""
+        self.animate_color(color.rgba(255, 50, 20, 0), duration=self.duration * 0.7)
+        self.animate_scale(self.max_size * 1.5, duration=self.duration * 0.7)
+        invoke(self._destroy, delay=self.duration * 0.7)
+
+    def _destroy(self):
+        """Clean up."""
+        self.active = False
+        destroy(self)
 
 
 class ProjectileManager:
@@ -65,22 +124,70 @@ class ProjectileManager:
 
     def __init__(self):
         self.projectiles = {}
+        self.explosions = []
         self.next_id = 0
 
-    def spawn(self, position, direction, owner_id, projectile_id=None):
+    def spawn(self, position, direction, owner_id, projectile_id=None, weapon='primary'):
         """Create a new projectile."""
         if projectile_id is None:
             projectile_id = self.next_id
             self.next_id += 1
 
+        # Different stats for primary vs secondary
+        if weapon == 'secondary':
+            speed = 40  # Slower
+            damage = 50  # More damage
+            lifetime = 4.0  # Longer range
+        else:
+            speed = 70  # Fast
+            damage = 12  # Less damage
+            lifetime = 2.5
+
         proj = Projectile(
             position=position,
             direction=direction,
             owner_id=owner_id,
-            projectile_id=projectile_id
+            projectile_id=projectile_id,
+            speed=speed,
+            damage=damage,
+            lifetime=lifetime,
+            weapon=weapon
         )
         self.projectiles[projectile_id] = proj
         return proj
+
+    def create_explosion(self, position, size=3.0):
+        """Create an explosion effect at position."""
+        exp = Explosion(position=position, size=size)
+        self.explosions.append(exp)
+
+        # Create particle-like debris
+        for _ in range(8):
+            debris = Entity(
+                model='cube',
+                color=color.rgb(255, random.randint(100, 200), 50),
+                scale=random.uniform(0.1, 0.3),
+                position=position
+            )
+            # Random direction
+            direction = Vec3(
+                random.uniform(-1, 1),
+                random.uniform(-1, 1),
+                random.uniform(-1, 1)
+            ).normalized()
+            speed = random.uniform(5, 15)
+            duration = random.uniform(0.3, 0.6)
+
+            debris.animate_position(
+                position + direction * speed,
+                duration=duration,
+                curve=curve.out_expo
+            )
+            debris.animate_scale(0, duration=duration)
+            debris.animate_color(color.rgba(255, 100, 50, 0), duration=duration)
+            invoke(lambda d=debris: destroy(d), delay=duration)
+
+        return exp
 
     def remove(self, projectile_id):
         """Remove a projectile by ID."""
@@ -90,10 +197,15 @@ class ProjectileManager:
                 proj.despawn()
             del self.projectiles[projectile_id]
 
-    def check_collisions(self, players, arena_bounds):
+    def check_collisions(self, players, local_player, arena_bounds):
         """Check projectile collisions with players and arena."""
         hits = []
         to_remove = []
+
+        # Combine local player with remote players for collision checking
+        all_players = dict(players)
+        if local_player:
+            all_players[local_player.player_id] = local_player
 
         for proj_id, proj in list(self.projectiles.items()):
             if not proj.active:
@@ -102,40 +214,61 @@ class ProjectileManager:
 
             # Check arena bounds
             pos = proj.position
+            hit_wall = False
             if (abs(pos.x) > arena_bounds[0] or
                 abs(pos.y) > arena_bounds[1] or
                 abs(pos.z) > arena_bounds[2]):
+                hit_wall = True
                 to_remove.append(proj_id)
+
+                # Create explosion for secondary weapon hitting walls
+                if proj.weapon == 'secondary':
+                    self.create_explosion(pos, size=4.0)
                 continue
 
             # Check player collisions
-            for player in players.values():
+            for player in all_players.values():
                 if player.player_id == proj.owner_id:
-                    continue  # Can't hit yourself
+                    continue
                 if not player.is_alive:
                     continue
 
-                # Simple distance-based collision
+                # Distance-based collision
                 dist = (player.position - proj.position).length()
-                if dist < 1.5:  # Hit radius
+                hit_radius = 2.0 if proj.weapon == 'secondary' else 1.5
+
+                if dist < hit_radius:
                     hits.append({
                         'projectile_id': proj_id,
                         'target_id': player.player_id,
                         'attacker_id': proj.owner_id,
-                        'damage': proj.damage
+                        'damage': proj.damage,
+                        'weapon': proj.weapon
                     })
                     to_remove.append(proj_id)
+
+                    # Create explosion for secondary weapon
+                    if proj.weapon == 'secondary':
+                        self.create_explosion(proj.position, size=5.0)
                     break
 
         # Clean up
         for proj_id in to_remove:
             self.remove(proj_id)
 
+        # Clean up finished explosions
+        self.explosions = [e for e in self.explosions if e.active]
+
         return hits
 
     def clear(self):
-        """Remove all projectiles."""
+        """Remove all projectiles and explosions."""
         for proj in list(self.projectiles.values()):
             if proj.active:
                 proj.despawn()
         self.projectiles.clear()
+
+        for exp in self.explosions:
+            if exp.active:
+                destroy(exp)
+        self.explosions.clear()
