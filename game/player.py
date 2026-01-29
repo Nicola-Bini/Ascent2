@@ -7,12 +7,14 @@ import math
 class Player(Entity):
     """6DOF player ship with physics-based movement. StarCraft Wraith-inspired design."""
 
-    def __init__(self, player_id=0, is_local=True, arena_bounds=None, **kwargs):
+    def __init__(self, player_id=0, is_local=True, arena_bounds=None, collidables=None, **kwargs):
         super().__init__(**kwargs)
 
         self.player_id = player_id
         self.is_local = is_local
         self.arena_bounds = arena_bounds
+        self.collidables = collidables if collidables else []
+        self.collision_radius = 2.0  # Player collision radius
 
         # Physics settings
         self.velocity = Vec3(0, 0, 0)
@@ -349,7 +351,12 @@ class Player(Entity):
         if self.velocity.length() > effective_max_speed:
             self.velocity = self.velocity.normalized() * effective_max_speed
 
+        # Store old position for collision resolution
+        old_position = Vec3(self.position)
         self.position += self.velocity * dt
+
+        # Check collision with obstacles
+        self._check_obstacle_collision(old_position)
 
         # Update power-up timers
         self.update_powerups()
@@ -610,6 +617,61 @@ class Player(Entity):
         while len(self.thruster_particles) > 50:
             old = self.thruster_particles.pop(0)
             destroy(old['entity'])
+
+    def _check_obstacle_collision(self, old_position):
+        """Check and resolve collision with obstacles."""
+        if not self.collidables:
+            return
+
+        player_radius = self.collision_radius
+
+        for obstacle in self.collidables:
+            if not obstacle.enabled:
+                continue
+
+            # Get obstacle bounds (AABB)
+            obs_pos = obstacle.world_position
+            obs_scale = obstacle.scale
+
+            # Half extents
+            hx = obs_scale.x / 2
+            hy = obs_scale.y / 2
+            hz = obs_scale.z / 2
+
+            # Find closest point on AABB to player
+            closest_x = clamp(self.x, obs_pos.x - hx, obs_pos.x + hx)
+            closest_y = clamp(self.y, obs_pos.y - hy, obs_pos.y + hy)
+            closest_z = clamp(self.z, obs_pos.z - hz, obs_pos.z + hz)
+
+            # Calculate distance from player to closest point
+            dx = self.x - closest_x
+            dy = self.y - closest_y
+            dz = self.z - closest_z
+            dist_sq = dx * dx + dy * dy + dz * dz
+
+            # Check collision
+            if dist_sq < player_radius * player_radius:
+                # Collision detected - push player out
+                if dist_sq > 0.001:
+                    dist = math.sqrt(dist_sq)
+                    # Normal from obstacle to player
+                    nx = dx / dist
+                    ny = dy / dist
+                    nz = dz / dist
+                    # Push player out
+                    penetration = player_radius - dist
+                    self.x += nx * penetration
+                    self.y += ny * penetration
+                    self.z += nz * penetration
+                    # Reflect velocity
+                    normal = Vec3(nx, ny, nz)
+                    dot = self.velocity.dot(normal)
+                    if dot < 0:
+                        self.velocity -= normal * dot * 1.5  # Bounce factor
+                else:
+                    # Player is exactly at closest point, use old position to determine push direction
+                    self.position = old_position
+                    self.velocity *= -0.5
 
     def update_powerups(self):
         """Update power-up timers."""

@@ -27,9 +27,10 @@ class Arena:
             color=Color(25/255, 30/255, 28/255, 1),
             scale=(sx + 2, 1, sz + 2),
             position=(0, -hy - 0.5, 0),
+            collider='box',
         ))
 
-        # Floor grid lines for depth perception
+        # Floor grid lines for depth perception (no collider - decorative)
         for i in range(-int(hx) + 20, int(hx), 40):
             self.walls.append(Entity(
                 model='cube',
@@ -51,6 +52,7 @@ class Arena:
             color=Color(18/255, 20/255, 22/255, 1),
             scale=(sx + 2, 1, sz + 2),
             position=(0, hy + 0.5, 0),
+            collider='box',
         ))
 
         # Front wall (positive Z) - dark blue-gray industrial
@@ -59,6 +61,7 @@ class Arena:
             color=Color(28/255, 32/255, 42/255, 1),
             scale=(sx + 2, sy + 2, 1),
             position=(0, 0, hz + 0.5),
+            collider='box',
         ))
 
         # Back wall (negative Z) - dark blue-gray
@@ -67,6 +70,7 @@ class Arena:
             color=Color(28/255, 32/255, 42/255, 1),
             scale=(sx + 2, sy + 2, 1),
             position=(0, 0, -hz - 0.5),
+            collider='box',
         ))
 
         # Left wall (negative X) - dark rust/brown
@@ -75,6 +79,7 @@ class Arena:
             color=Color(38/255, 30/255, 26/255, 1),
             scale=(1, sy + 2, sz + 2),
             position=(-hx - 0.5, 0, 0),
+            collider='box',
         ))
 
         # Right wall (positive X) - dark rust/brown
@@ -83,6 +88,7 @@ class Arena:
             color=Color(38/255, 30/255, 26/255, 1),
             scale=(1, sy + 2, sz + 2),
             position=(hx + 0.5, 0, 0),
+            collider='box',
         ))
 
     def _create_tunnels(self):
@@ -96,23 +102,27 @@ class Arena:
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(30, 3, 100), position=(0, 12, 0),
+            collider='box',
         ))
         # Bottom
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(30, 3, 100), position=(0, -12, 0),
+            collider='box',
         ))
         # Left side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(3, 21, 100), position=(-16.5, 0, 0),
+            collider='box',
         ))
         # Right side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(3, 21, 100), position=(16.5, 0, 0),
+            collider='box',
         ))
-        # Lights inside tunnel
+        # Lights inside tunnel (no collider - decorative only)
         for z in range(-40, 50, 20):
             self.obstacles.append(Entity(
                 model='cube', color=light_strip,
@@ -124,21 +134,25 @@ class Arena:
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(100, 3, 25), position=(0, 27, 0),
+            collider='box',
         ))
         # Bottom
         self.obstacles.append(Entity(
             model='cube', color=tunnel_wall,
             scale=(100, 3, 25), position=(0, 3, 0),
+            collider='box',
         ))
         # Front side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(100, 21, 3), position=(0, 15, 14),
+            collider='box',
         ))
         # Back side
         self.obstacles.append(Entity(
             model='cube', color=tunnel_inner,
             scale=(100, 21, 3), position=(0, 15, -14),
+            collider='box',
         ))
 
     def _create_obstacles(self):
@@ -180,6 +194,7 @@ class Arena:
                 color=c['color'],
                 scale=c['scale'],
                 position=c['pos'],
+                collider='box',
             ))
 
     def get_random_spawn_point(self):
@@ -215,3 +230,14 @@ class Arena:
             clamp(position.y, -hy + margin, hy - margin),
             clamp(position.z, -hz + margin, hz - margin)
         )
+
+    def get_collidables(self):
+        """Get all entities with colliders for collision checking."""
+        collidables = []
+        for wall in self.walls:
+            if hasattr(wall, 'collider') and wall.collider:
+                collidables.append(wall)
+        for obstacle in self.obstacles:
+            if hasattr(obstacle, 'collider') and obstacle.collider:
+                collidables.append(obstacle)
+        return collidables

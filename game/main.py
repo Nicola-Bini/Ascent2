@@ -245,6 +245,13 @@ class Game:
             f"[LOG] Arena created with {len(self.arena.walls)} walls and {len(self.arena.obstacles)} obstacles"
         )
 
+        # Get collidable obstacles for collision detection
+        self.collidables = self.arena.get_collidables()
+        print(f"[LOG] {len(self.collidables)} collidable obstacles registered")
+
+        # Set collidables on projectile manager
+        self.projectile_manager.set_collidables(self.collidables)
+
         # Create local player - spawn in corners away from central tunnels
         if player_id == 0:
             spawn_pos = Vec3(-60, 0, -60)  # Host spawns in one corner
@@ -256,6 +263,7 @@ class Game:
             is_local=True,
             position=spawn_pos,
             arena_bounds=self.arena.half_size,  # Pass bounds for clamping
+            collidables=self.collidables,  # Pass collidables for collision detection
         )
         print(f"[LOG] Player {player_id} spawned at {spawn_pos}")
 
@@ -607,7 +615,8 @@ class Game:
             player_id=player_id,
             is_local=False,
             position=position,
-            arena_bounds=self.arena.get_bounds() if self.arena else (60, 30, 60)
+            arena_bounds=self.arena.get_bounds() if self.arena else (60, 30, 60),
+            collidables=self.collidables if hasattr(self, 'collidables') else []
         )
         player.visible = True
 

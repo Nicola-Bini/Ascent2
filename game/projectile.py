@@ -7,7 +7,7 @@ class Projectile(Entity):
     """Fast-moving projectile with collision detection."""
 
     def __init__(self, position, direction, owner_id, projectile_id=0,
-                 speed=60, damage=15, lifetime=3.0, weapon='primary', **kwargs):
+                 speed=60, damage=15, lifetime=3.0, weapon='primary', collidables=None, **kwargs):
         # Different visuals for each weapon type
         if weapon == 'secondary':
             proj_color = Color(255/255, 100/255, 50/255, 1)  # Orange-red
@@ -40,6 +40,8 @@ class Projectile(Entity):
         self.weapon = weapon
         self.spawn_time = time.time()
         self.active = True
+        self.collidables = collidables if collidables else []
+        self.proj_radius = proj_scale * 0.5
 
         # Visual trail effect
         if weapon == 'secondary':
@@ -63,14 +65,55 @@ class Projectile(Entity):
 
         self.position += self.direction * self.speed * time.dt
 
+        # Check collision with obstacles
+        if self._check_obstacle_collision():
+            self.despawn(hit_obstacle=True)
+            return
+
         if time.time() - self.spawn_time > self.lifetime:
             self.despawn()
 
-    def despawn(self, create_explosion=False):
+    def _check_obstacle_collision(self):
+        """Check if projectile hit an obstacle."""
+        if not self.collidables:
+            return False
+
+        for obstacle in self.collidables:
+            if not obstacle.enabled:
+                continue
+
+            # Get obstacle bounds (AABB)
+            obs_pos = obstacle.world_position
+            obs_scale = obstacle.scale
+
+            # Half extents
+            hx = obs_scale.x / 2
+            hy = obs_scale.y / 2
+            hz = obs_scale.z / 2
+
+            # Find closest point on AABB to projectile
+            closest_x = clamp(self.x, obs_pos.x - hx, obs_pos.x + hx)
+            closest_y = clamp(self.y, obs_pos.y - hy, obs_pos.y + hy)
+            closest_z = clamp(self.z, obs_pos.z - hz, obs_pos.z + hz)
+
+            # Calculate distance from projectile to closest point
+            dx = self.x - closest_x
+            dy = self.y - closest_y
+            dz = self.z - closest_z
+            dist_sq = dx * dx + dy * dy + dz * dz
+
+            # Check collision (using projectile radius)
+            if dist_sq < self.proj_radius * self.proj_radius:
+                return True
+
+        return False
+
+    def despawn(self, create_explosion=False, hit_obstacle=False):
         """Remove the projectile, optionally with explosion."""
         if not self.active:
             return
         self.active = False
+        self.hit_obstacle = hit_obstacle  # Flag for external code to check
         destroy(self)
 
     def get_state(self):
@@ -131,10 +174,15 @@ class Explosion(Entity):
 class ProjectileManager:
     """Manages all projectiles in the game."""
 
-    def __init__(self):
+    def __init__(self, collidables=None):
         self.projectiles = {}
         self.explosions = []
         self.next_id = 0
+        self.collidables = collidables if collidables else []
+
+    def set_collidables(self, collidables):
+        """Set the list of collidable obstacles."""
+        self.collidables = collidables
 
     def spawn(self, position, direction, owner_id, projectile_id=None, weapon='primary'):
         """Create a new projectile."""
@@ -164,7 +212,8 @@ class ProjectileManager:
             speed=speed,
             damage=damage,
             lifetime=lifetime,
-            weapon=weapon
+            weapon=weapon,
+            collidables=self.collidables
         )
         self.projectiles[projectile_id] = proj
         return proj
