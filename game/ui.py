@@ -190,6 +190,336 @@ class JoinDialog(Entity):
         self.ip_input.active = False
 
 
+class GameConfigScreen(Entity):
+    """Game configuration screen - set bots, vehicle, difficulty before starting."""
+
+    def __init__(self, on_start, on_cancel):
+        super().__init__(parent=camera.ui)
+
+        self.on_start = on_start
+        self.on_cancel = on_cancel
+
+        # Try to load ship list
+        self.ship_list = ['fighter']  # Default
+        try:
+            from models import list_all_ships, SHIPS
+            self.ship_list = list_all_ships()
+            self.ships_data = SHIPS
+        except ImportError:
+            self.ships_data = {}
+
+        # Configuration values
+        self.config = {
+            'bot_count': 5,
+            'difficulty': 'medium',
+            'starting_ship': 'fighter',
+            'friendly_fire': False,
+        }
+
+        # Background panel
+        self.panel = Entity(
+            parent=self,
+            model='quad',
+            color=Color(20/255, 25/255, 35/255, 250/255),
+            scale=(0.9, 0.85),
+            z=0.1
+        )
+
+        # Title
+        self.title = Text(
+            parent=self,
+            text='GAME CONFIGURATION',
+            scale=2.5,
+            origin=(0, 0),
+            y=0.35,
+            color=color.cyan
+        )
+
+        # === BOT COUNT ===
+        self.bot_label = Text(
+            parent=self,
+            text='Number of Bots:',
+            scale=1.2,
+            origin=(-0.5, 0),
+            position=(-0.35, 0.22),
+            color=color.white
+        )
+
+        self.bot_count_text = Text(
+            parent=self,
+            text='5',
+            scale=1.5,
+            origin=(0, 0),
+            position=(0.15, 0.22),
+            color=color.yellow
+        )
+
+        self.bot_minus = Button(
+            parent=self,
+            text='Less',
+            scale=(0.07, 0.05),
+            position=(-0.02, 0.22),
+            color=color.red.tint(-0.3),
+            on_click=self._decrease_bots
+        )
+
+        self.bot_plus = Button(
+            parent=self,
+            text='More',
+            scale=(0.07, 0.05),
+            position=(0.28, 0.22),
+            color=color.green.tint(-0.3),
+            on_click=self._increase_bots
+        )
+
+        # === DIFFICULTY ===
+        self.diff_label = Text(
+            parent=self,
+            text='Difficulty:',
+            scale=1.2,
+            origin=(-0.5, 0),
+            position=(-0.35, 0.12),
+            color=color.white
+        )
+
+        self.diff_easy = Button(
+            parent=self,
+            text='Easy',
+            scale=(0.1, 0.045),
+            position=(0.0, 0.12),
+            color=color.gray,
+            on_click=lambda: self._set_difficulty('easy')
+        )
+
+        self.diff_medium = Button(
+            parent=self,
+            text='Medium',
+            scale=(0.1, 0.045),
+            position=(0.12, 0.12),
+            color=color.azure,
+            on_click=lambda: self._set_difficulty('medium')
+        )
+
+        self.diff_hard = Button(
+            parent=self,
+            text='Hard',
+            scale=(0.1, 0.045),
+            position=(0.24, 0.12),
+            color=color.gray,
+            on_click=lambda: self._set_difficulty('hard')
+        )
+
+        # === STARTING VEHICLE ===
+        self.ship_label = Text(
+            parent=self,
+            text='Starting Vehicle:',
+            scale=1.2,
+            origin=(-0.5, 0),
+            position=(-0.35, 0.01),
+            color=color.white
+        )
+
+        self.ship_index = 0
+        self.ship_name_text = Text(
+            parent=self,
+            text='Fighter',
+            scale=1.3,
+            origin=(0, 0),
+            position=(0.12, 0.01),
+            color=color.orange
+        )
+
+        self.ship_prev = Button(
+            parent=self,
+            text='Prev',
+            scale=(0.08, 0.045),
+            position=(-0.05, 0.01),
+            color=color.azure,
+            on_click=self._prev_ship
+        )
+
+        self.ship_next = Button(
+            parent=self,
+            text='Next',
+            scale=(0.08, 0.045),
+            position=(0.30, 0.01),
+            color=color.azure,
+            on_click=self._next_ship
+        )
+
+        # Ship info
+        self.ship_info = Text(
+            parent=self,
+            text='',
+            scale=0.9,
+            origin=(0, 0),
+            position=(0, -0.08),
+            color=color.light_gray
+        )
+        self._update_ship_info()
+
+        # === VEHICLE CATEGORIES (quick filters) ===
+        self.cat_label = Text(
+            parent=self,
+            text='Filter:',
+            scale=1,
+            origin=(-0.5, 0),
+            position=(-0.35, -0.16),
+            color=color.gray
+        )
+
+        categories = [('All', None), ('Fly', 'fly'), ('Tank', 'ground'), ('Train', 'train'), ('Hover', 'hover')]
+        for i, (label, movement) in enumerate(categories):
+            btn = Button(
+                parent=self,
+                text=label,
+                scale=(0.07, 0.04),
+                position=(-0.12 + i * 0.09, -0.16),
+                color=color.gray.tint(-0.2),
+                on_click=lambda m=movement: self._filter_ships(m)
+            )
+
+        # === FRIENDLY FIRE ===
+        self.ff_label = Text(
+            parent=self,
+            text='Friendly Fire:',
+            scale=1.2,
+            origin=(-0.5, 0),
+            position=(-0.35, -0.25),
+            color=color.white
+        )
+
+        self.ff_button = Button(
+            parent=self,
+            text='OFF',
+            scale=(0.1, 0.045),
+            position=(0.08, -0.25),
+            color=color.red.tint(-0.3),
+            on_click=self._toggle_friendly_fire
+        )
+
+        # === START / CANCEL BUTTONS ===
+        self.start_button = Button(
+            parent=self,
+            text='START GAME',
+            scale=(0.25, 0.07),
+            position=(-0.12, -0.36),
+            color=color.green.tint(-0.2),
+            highlight_color=color.green,
+            on_click=self._on_start
+        )
+
+        self.cancel_button = Button(
+            parent=self,
+            text='BACK',
+            scale=(0.15, 0.07),
+            position=(0.18, -0.36),
+            color=color.red.tint(-0.3),
+            highlight_color=color.red,
+            on_click=self._on_cancel
+        )
+
+        self.enabled = False
+        self.current_filter = None
+
+    def _decrease_bots(self):
+        self.config['bot_count'] = max(0, self.config['bot_count'] - 1)
+        self.bot_count_text.text = str(self.config['bot_count'])
+
+    def _increase_bots(self):
+        self.config['bot_count'] = min(30, self.config['bot_count'] + 1)
+        self.bot_count_text.text = str(self.config['bot_count'])
+
+    def _set_difficulty(self, diff):
+        self.config['difficulty'] = diff
+        # Update button colors
+        self.diff_easy.color = color.azure if diff == 'easy' else color.gray
+        self.diff_medium.color = color.azure if diff == 'medium' else color.gray
+        self.diff_hard.color = color.azure if diff == 'hard' else color.gray
+
+    def _prev_ship(self):
+        self.ship_index = (self.ship_index - 1) % len(self.ship_list)
+        self._update_ship_display()
+
+    def _next_ship(self):
+        self.ship_index = (self.ship_index + 1) % len(self.ship_list)
+        self._update_ship_display()
+
+    def _update_ship_display(self):
+        ship_id = self.ship_list[self.ship_index]
+        self.config['starting_ship'] = ship_id
+
+        # Get display name
+        if ship_id in self.ships_data:
+            ship_def = self.ships_data[ship_id]
+            display_name = ship_def.get('name', ship_id)
+            self.ship_name_text.text = display_name
+        else:
+            self.ship_name_text.text = ship_id.replace('_', ' ').title()
+
+        self._update_ship_info()
+
+    def _update_ship_info(self):
+        ship_id = self.ship_list[self.ship_index]
+        if ship_id in self.ships_data:
+            ship = self.ships_data[ship_id]
+            movement = ship.get('movement', 'fly').upper()
+            hp = ship.get('health', 100)
+            speed = ship.get('speed', 200)
+            weapons = ship.get('weapons', [])[:2]
+            weapon_str = ', '.join(w.replace('_', ' ').title() for w in weapons)
+            self.ship_info.text = f'[{movement}] HP:{hp} SPD:{speed} | {weapon_str}'
+        else:
+            self.ship_info.text = ''
+
+    def _filter_ships(self, movement_type):
+        self.current_filter = movement_type
+        if movement_type is None:
+            # Show all
+            try:
+                from models import list_all_ships
+                self.ship_list = list_all_ships()
+            except:
+                pass
+        else:
+            # Filter by movement type
+            self.ship_list = [
+                sid for sid, sdef in self.ships_data.items()
+                if sdef.get('movement') == movement_type
+            ]
+            if not self.ship_list:
+                self.ship_list = ['fighter']
+
+        self.ship_index = 0
+        self._update_ship_display()
+
+    def _toggle_friendly_fire(self):
+        self.config['friendly_fire'] = not self.config['friendly_fire']
+        if self.config['friendly_fire']:
+            self.ff_button.text = 'ON'
+            self.ff_button.color = color.green.tint(-0.3)
+        else:
+            self.ff_button.text = 'OFF'
+            self.ff_button.color = color.red.tint(-0.3)
+
+    def _on_start(self):
+        self.on_start(self.config)
+
+    def _on_cancel(self):
+        self.on_cancel()
+
+    def show(self):
+        self.enabled = True
+        mouse.locked = False
+        mouse.visible = True
+
+    def hide(self):
+        self.enabled = False
+
+    def get_config(self):
+        return self.config.copy()
+
+
 class HUD(Entity):
     """In-game heads-up display."""
 
@@ -319,6 +649,36 @@ class HUD(Entity):
             color=color.light_gray
         )
 
+        # Ship name display (top right)
+        self.ship_name = Text(
+            parent=self,
+            text='',
+            scale=1.5,
+            position=(0.55, 0.42),
+            origin=(0.5, 0),
+            color=color.rgb(255, 215, 0)  # Gold
+        )
+
+        # Weapons display (below ship name)
+        self.weapons_text = Text(
+            parent=self,
+            text='',
+            scale=0.9,
+            position=(0.55, 0.36),
+            origin=(0.5, 0),
+            color=color.rgb(200, 200, 200)
+        )
+
+        # Controls hint
+        self.controls_hint = Text(
+            parent=self,
+            text='[V] View  [/[] Ship  LMB/RMB/MMB Fire',
+            scale=0.7,
+            position=(0, -0.48),
+            origin=(0, 0),
+            color=color.rgb(120, 120, 120)
+        )
+
         self.enabled = False
 
     def update_health(self, health, max_health=100):
@@ -347,6 +707,21 @@ class HUD(Entity):
     def update_speed(self, speed):
         """Update speed display."""
         self.speed_text.text = f'SPD: {int(speed)}'
+
+    def update_ship_info(self, ship_name, weapons, movement_type='fly'):
+        """Update ship name, weapons, and controls hint based on vehicle type."""
+        self.ship_name.text = ship_name if ship_name else 'Unknown Ship'
+        if weapons:
+            weapon_names = [w.replace('_', ' ').title() for w in weapons[:3]]
+            self.weapons_text.text = ' | '.join(weapon_names)
+        else:
+            self.weapons_text.text = 'No weapons'
+
+        # Update controls hint based on movement type
+        if movement_type in ['ground', 'hover', 'train']:
+            self.controls_hint.text = 'TANK: A/D Turn  Q/E Strafe  Mouse=Turret  Space=Drift  Shift=Boost'
+        else:
+            self.controls_hint.text = '[V] View  [/[] Ship  Mouse=Aim  WASD+QE=Move  Shift=Boost'
 
     def update_player_count(self, count):
         """Update player count display."""

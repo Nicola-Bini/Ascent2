@@ -2,36 +2,100 @@
 from ursina import *
 import random
 
+# Try to import weapon definitions
+try:
+    from models import WEAPONS
+    HAS_WEAPONS = True
+except ImportError:
+    HAS_WEAPONS = False
+    WEAPONS = {}
+
 
 class Projectile(Entity):
     """Fast-moving projectile with collision detection."""
 
     def __init__(self, position, direction, owner_id, projectile_id=0,
                  speed=60, damage=15, lifetime=3.0, weapon='primary', collidables=None, **kwargs):
-        # Different visuals for each weapon type
-        if weapon == 'secondary':
-            proj_color = Color(255/255, 100/255, 50/255, 1)  # Orange-red
-            proj_scale = (2.0, 2.0, 2.0)  # 4x bigger
-            proj_model = 'sphere'
-            trail_scale = (1.2, 1.2, 4.8)  # 4x bigger trail
-        elif weapon == 'spreadshot':
-            proj_color = Color(150/255, 200/255, 255/255, 1)  # Light blue
-            proj_scale = (0.12, 0.12, 0.12)
-            proj_model = 'sphere'
-            trail_scale = (0.06, 0.06, 0.3)
+
+        # Look up weapon definition if available
+        weapon_def = WEAPONS.get(weapon, {}) if HAS_WEAPONS else {}
+
+        # Get weapon-specific stats (with fallbacks)
+        # Use 'in' check to properly handle speed=0 (mines, deployables)
+        if weapon_def:
+            if 'speed' in weapon_def:
+                speed = weapon_def['speed']
+            if 'damage' in weapon_def:
+                damage = weapon_def['damage']
+            if 'lifetime' in weapon_def:
+                lifetime = weapon_def['lifetime']
+            weapon_color = weapon_def.get('color', None)
         else:
-            # Primary laser - long thick beam (3x bigger)
-            proj_color = Color(100/255, 255/255, 150/255, 1)  # Bright green laser
-            proj_scale = (1.05, 1.05, 9.0)  # 3x thicker and longer
+            weapon_color = None
+
+        # Determine visual style based on weapon type
+        weapon_type = weapon_def.get('type', 'primary') if weapon_def else 'primary'
+
+        if weapon_color:
+            r, g, b = weapon_color
+            proj_color = Color(r/255, g/255, b/255, 1)
+        elif weapon in ['secondary', 'missile', 'heavy_missile', 'guided_missile']:
+            proj_color = Color(255/255, 100/255, 50/255, 1)  # Orange-red
+        elif weapon in ['spreadshot', 'triple_shot', 'shotgun']:
+            proj_color = Color(150/255, 200/255, 255/255, 1)  # Light blue
+        elif weapon in ['plasma', 'magic_bolt']:
+            proj_color = Color(100/255, 200/255, 255/255, 1)  # Cyan
+        elif weapon in ['flamethrower']:
+            proj_color = Color(255/255, 150/255, 0/255, 1)  # Orange flame
+        elif weapon in ['railgun', 'spear']:
+            proj_color = Color(100/255, 100/255, 255/255, 1)  # Blue
+        elif weapon in ['poison_candy', 'zombie_virus']:
+            proj_color = Color(100/255, 200/255, 50/255, 1)  # Toxic green
+        elif weapon in ['ghost_shot']:
+            proj_color = Color(200/255, 200/255, 255/255, 0.7)  # Ghostly transparent
+        else:
+            proj_color = Color(100/255, 255/255, 150/255, 1)  # Default green laser
+
+        # Determine projectile shape/size based on weapon
+        if weapon_type == 'secondary' or weapon in ['missile', 'heavy_missile', 'guided_missile', 'mortar']:
+            proj_scale = (2.0, 2.0, 2.0)
+            proj_model = 'sphere'
+            trail_scale = (1.2, 1.2, 4.8)
+        elif weapon in ['flamethrower']:
+            proj_scale = (1.5, 1.5, 1.5)
+            proj_model = 'sphere'
+            trail_scale = (1.0, 1.0, 2.0)
+        elif weapon in ['railgun', 'spear']:
+            proj_scale = (0.5, 0.5, 15.0)  # Long thin projectile
+            proj_model = 'cube'
+            trail_scale = (0.3, 0.3, 8.0)
+        elif weapon in ['shotgun', 'triple_shot']:
+            proj_scale = (0.4, 0.4, 0.4)
+            proj_model = 'sphere'
+            trail_scale = (0.2, 0.2, 1.0)
+        elif weapon in ['plasma', 'magic_bolt']:
+            proj_scale = (1.2, 1.2, 1.2)
+            proj_model = 'sphere'
+            trail_scale = (0.8, 0.8, 3.0)
+        elif weapon in ['davinci_blade']:
+            proj_scale = (2.0, 0.3, 2.0)  # Spinning blade shape
+            proj_model = 'cube'
+            trail_scale = (1.5, 0.2, 1.5)
+        else:
+            # Default laser style
+            proj_scale = (1.05, 1.05, 9.0)
             proj_model = 'cube'
             trail_scale = (0.75, 0.75, 4.5)
+
+        # Choose collider based on model
+        collider_type = 'box' if proj_model == 'cube' else 'sphere'
 
         super().__init__(
             model=proj_model,
             color=proj_color,
             scale=proj_scale,
             position=position,
-            collider='box' if weapon == 'primary' else 'sphere',
+            collider=collider_type,
             **kwargs
         )
 
@@ -42,6 +106,7 @@ class Projectile(Entity):
         self.damage = damage
         self.lifetime = lifetime
         self.weapon = weapon
+        self.weapon_def = weapon_def  # Store for special effects
         self.spawn_time = time.time()
         self.active = True
         self.collidables = collidables if collidables else []
@@ -50,16 +115,20 @@ class Projectile(Entity):
         self.hit_position = None
 
         # Orient projectile to face direction of travel (for elongated shapes)
-        if weapon == 'primary':
+        if proj_model == 'cube':
             self.look_at(self.position + self.direction)
 
-        # Visual trail effect
-        if weapon == 'secondary':
-            trail_color = Color(255/255, 150/255, 50/255, 1)
-        elif weapon == 'spreadshot':
-            trail_color = Color(100/255, 150/255, 255/255, 1)
-        else:
-            trail_color = Color(150/255, 200/255, 80/255, 1)
+        # Special: spinning for blade weapons
+        if weapon in ['davinci_blade']:
+            self.spin_speed = 720  # degrees per second
+
+        # Visual trail effect - slightly darker version of projectile color
+        trail_color = Color(
+            proj_color.r * 0.7,
+            proj_color.g * 0.7,
+            proj_color.b * 0.8,
+            proj_color.a
+        )
         self.trail = Entity(
             parent=self,
             model='cube',
@@ -74,6 +143,10 @@ class Projectile(Entity):
             return
 
         self.position += self.direction * self.speed * time.dt
+
+        # Special effects for certain weapons
+        if hasattr(self, 'spin_speed'):
+            self.rotation_z += self.spin_speed * time.dt
 
         # Check collision with obstacles - set flag but don't despawn (let manager handle it)
         if self._check_obstacle_collision():
@@ -201,19 +274,25 @@ class ProjectileManager:
             projectile_id = self.next_id
             self.next_id += 1
 
-        # Different stats for each weapon type (speeds 3x faster)
-        if weapon == 'secondary':
-            speed = 350  # Faster missile
-            damage = 100  # Direct hit kills (100 = full health)
-            lifetime = 10.0  # Much longer range
-        elif weapon == 'spreadshot':
-            speed = 195  # Medium speed (was 65)
-            damage = 8  # Less damage per projectile (but 3 projectiles)
-            lifetime = 2.0  # Medium range
+        # Look up weapon stats from WEAPONS dict
+        weapon_def = WEAPONS.get(weapon, {}) if HAS_WEAPONS else {}
+
+        # Use weapon definition values, with sensible defaults for undefined weapons
+        # Note: use 'in' check to properly handle speed=0 (mines)
+        if 'speed' in weapon_def:
+            speed = weapon_def['speed']
         else:
-            speed = 3500  # Ultra fast laser (5x faster)
-            damage = 12  # Less damage
-            lifetime = 1.5
+            speed = 3500  # Default laser speed
+
+        if 'damage' in weapon_def:
+            damage = weapon_def['damage']
+        else:
+            damage = 12  # Default laser damage
+
+        if 'lifetime' in weapon_def:
+            lifetime = weapon_def['lifetime']
+        else:
+            lifetime = 1.5  # Default projectile lifetime
 
         proj = Projectile(
             position=position,
@@ -299,8 +378,9 @@ class ProjectileManager:
                 })
                 to_remove.append(proj_id)
 
-                # Create explosion for secondary weapon hitting obstacles (3x bigger)
-                if proj.weapon == 'secondary':
+                # Create explosion for explosive weapons hitting obstacles (3x bigger)
+                explosive_weapons = ['secondary', 'missile', 'heavy_missile', 'guided_missile', 'mortar', 'davinci_tank', 'swarm_missile']
+                if proj.weapon in explosive_weapons or (proj.weapon_def and proj.weapon_def.get('splash')):
                     self.create_explosion(proj.hit_position, size=72.0)
                     # Splash damage to nearby players
                     splash_radius = 15.0
@@ -334,8 +414,9 @@ class ProjectileManager:
                 hit_wall = True
                 to_remove.append(proj_id)
 
-                # Create explosion for secondary weapon hitting walls (3x bigger)
-                if proj.weapon == 'secondary':
+                # Create explosion for explosive weapons hitting walls (3x bigger)
+                explosive_weapons = ['secondary', 'missile', 'heavy_missile', 'guided_missile', 'mortar', 'davinci_tank', 'swarm_missile']
+                if proj.weapon in explosive_weapons or (proj.weapon_def and proj.weapon_def.get('splash')):
                     self.create_explosion(pos, size=72.0)
                     obstacle_hits.append({
                         'position': Vec3(pos),
@@ -375,8 +456,10 @@ class ProjectileManager:
                 dist = (player.position - proj.position).length()
                 # Use player's collision_radius if available, otherwise default
                 target_radius = getattr(player, 'collision_radius', 10.0)
-                # Add projectile radius for larger projectiles
-                proj_bonus = 2.0 if proj.weapon == 'secondary' else 1.0
+                # Add projectile radius for larger projectiles (explosive weapons are bigger)
+                explosive_weapons = ['secondary', 'missile', 'heavy_missile', 'guided_missile', 'mortar', 'davinci_tank', 'swarm_missile']
+                is_explosive = proj.weapon in explosive_weapons or (proj.weapon_def and proj.weapon_def.get('splash'))
+                proj_bonus = 2.0 if is_explosive else 1.0
                 hit_radius = target_radius + proj_bonus
 
                 if dist < hit_radius:
@@ -390,8 +473,8 @@ class ProjectileManager:
                     })
                     to_remove.append(proj_id)
 
-                    # Create explosion for secondary weapon (3x bigger) with splash damage
-                    if proj.weapon == 'secondary':
+                    # Create explosion for explosive weapons (3x bigger) with splash damage
+                    if is_explosive:
                         self.create_explosion(proj.position, size=84.0)  # 3x bigger explosion
                         # Splash damage to nearby players
                         splash_radius = 15.0
